@@ -24,17 +24,6 @@ define Package/helloworld/description
 	A simple "Hello, world!" -application.
 endef
 
-define Build/Prepare
-	mkdir -p $(PKG_BUILD_DIR)
-	cp $(SOURCE_DIR)/* $(PKG_BUILD_DIR)
-	$(Build/Patch)
-endef
-
-define Build/Compile
-	$(TARGET_CC) $(TARGET_CFLAGS) -o $(PKG_BUILD_DIR)/hello.o -c $(PKG_BUILD_DIR)/hello.c
-	$(TARGET_CC) $(TARGET_LDFLAGS) -o $(PKG_BUILD_DIR)/$1 $(PKG_BUILD_DIR)/hello.o
-endef
-
 define Package/hello/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/hello $(1)/usr/bin
