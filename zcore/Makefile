@@ -19,7 +19,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/zcore
 	SECTION:=irz
 	CATEGORY:=IRZ-custom
-	DEPENDS:=+libpthread +libreadline +wjelement
+	DEPENDS:=+libpthread +libreadline +wjelement +libncurses
 	TITLE:=Zenith iRX CLI interface
 endef
 
