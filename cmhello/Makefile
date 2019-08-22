@@ -27,7 +27,7 @@ endef
 
 define Package/cmhello/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/hello $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/hello $(1)/usr/bin
 endef
 
 $(eval $(call BuildPackage,cmhello))
