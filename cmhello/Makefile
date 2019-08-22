@@ -18,6 +18,7 @@ include $(INCLUDE_DIR)/cmake.mk
 define Package/cmhello
 	SECTION:=examples
 	CATEGORY:=Examples
+	DEPENDS:=+libpthread +libhello
 	TITLE:=Hello, World(cmake build)!
 endef
 
