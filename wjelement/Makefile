@@ -24,6 +24,15 @@ define Package/wjelement
 endef
 
 define Package/wjelement/install
+				$(INSTALL_DIR) $(1)/usr/lib/
+				$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/lib/libxpl.so $(1)/usr/lib/
+				ln -s libxpl.so $(1)/usr/lib/libxpl.so.1
+				$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/wjwriter/libwjwriter.so $(1)/usr/lib/
+				ln -s libwjwriter.so $(1)/usr/lib/libwjwriter.so.1
+				$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/wjreader/libwjreader.so $(1)/usr/lib/
+				ln -s libwjreader.so $(1)/usr/lib/libwjreader.so.1
+				$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/wjelement/libwjelement.so $(1)/usr/lib/
+				ln -s libwjelement.so $(1)/usr/lib/libwjelement.so.1
 endef
 
 define Build/InstallDev
