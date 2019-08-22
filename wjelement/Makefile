@@ -38,18 +38,18 @@ endef
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
 	$(INSTALL_DIR) $(1)/usr/lib/
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/src/include/memmgr.h $(1)/usr/include
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/src/include/nmutil.h $(1)/usr/include
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/src/include/xpl.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/include/memmgr.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/include/nmutil.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/include/xpl.h $(1)/usr/include
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/lib/libxpl.so $(1)/usr/lib/
 	ln -s libxpl.so $(1)/usr/lib/libxpl.so.1
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/src/include/wjwriter.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/include/wjwriter.h $(1)/usr/include
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/wjwriter/libwjwriter.so $(1)/usr/lib/
 	ln -s libwjwriter.so $(1)/usr/lib/libwjwriter.so.1
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/src/include/wjelement.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/include/wjelement.h $(1)/usr/include
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/wjelement/libwjelement.so $(1)/usr/lib/
 	ln -s libwjelement.so $(1)/usr/lib/libwjelement.so.1
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/src/include/wjreader.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/include/wjreader.h $(1)/usr/include
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/wjreader/libwjreader.so $(1)/usr/lib/
 	ln -s libwjreader.so $(1)/usr/lib/libwjreader.so.1
 endef
