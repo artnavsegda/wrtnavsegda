@@ -32,6 +32,7 @@ define Package/zcore/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/zcore $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/zfilter $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/zfilter2 $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/zgen $(1)/usr/bin
 endef
 
 $(eval $(call BuildPackage,zcore))
