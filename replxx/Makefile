@@ -19,7 +19,7 @@ include $(INCLUDE_DIR)/host-build.mk
 define Package/replxx
 	SECTION:=irz
 	CATEGORY:=IRZ-custom
-	DEPENDS:=+libpthread
+	DEPENDS:=+libpthread +libstdcpp
 	TITLE:=Read Evaluate Print Loop ++
 endef
 
