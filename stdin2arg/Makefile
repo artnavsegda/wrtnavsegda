@@ -32,6 +32,7 @@ define Package/stdin2arg/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/stdin2arg $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/printargs $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/forkexec $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/popen $(1)/usr/bin
 endef
 
 $(eval $(call BuildPackage,stdin2arg))
