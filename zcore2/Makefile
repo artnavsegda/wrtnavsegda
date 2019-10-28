@@ -33,5 +33,5 @@ define Package/zcore2/install
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/zcore $(1)/usr/bin
 endef
 
-$(eval $(call BuildPackage,zcore))
+$(eval $(call BuildPackage,zcore2))
 
