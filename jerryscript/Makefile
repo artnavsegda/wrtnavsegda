@@ -25,7 +25,7 @@ endef
 
 define Package/jerryscript/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/build/bin/jerry $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ipkg-install/usr/bin/jerry $(1)/usr/bin
 	$(INSTALL_DIR) $(1)/usr/lib/
 endef
 
