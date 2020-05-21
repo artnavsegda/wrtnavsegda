@@ -44,6 +44,7 @@ define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include/jerryscript-ext/
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-ext/handler.h $(1)/usr/include/jerryscript-ext
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-ext/module.h $(1)/usr/include/jerryscript-ext
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-ext/debugger.h $(1)/usr/include/jerryscript-ext
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ipkg-install/usr/lib/libjerry-core.a $(1)/usr/lib/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ipkg-install/usr/lib/libjerry-ext.a $(1)/usr/lib/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ipkg-install/usr/lib/libjerry-libm.a $(1)/usr/lib/
