@@ -32,17 +32,17 @@ endef
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
 	$(INSTALL_DIR) $(1)/usr/lib/
-  $(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-compiler.h $(1)/usr/include
-  $(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-config.h $(1)/usr/include
-  $(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-core.h $(1)/usr/include
-  $(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-debugger.h $(1)/usr/include
-  $(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-debugger-transport.h $(1)/usr/include
-  $(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript.h $(1)/usr/include
-  $(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-port-default.h $(1)/usr/include
-  $(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-port.h $(1)/usr/include
-  $(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-snapshot.h $(1)/usr/include
-  $(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-ext/handler.h $(1)/usr/include
-  $(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-ext/module.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-compiler.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-config.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-core.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-debugger.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-debugger-transport.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-port-default.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-port.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-snapshot.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-ext/handler.h $(1)/usr/include
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-ext/module.h $(1)/usr/include
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ipkg-install/usr/lib/libjerry-core.a $(1)/usr/lib/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ipkg-install/usr/lib/libjerry-ext.a $(1)/usr/lib/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ipkg-install/usr/lib/libjerry-libm.a $(1)/usr/lib/
