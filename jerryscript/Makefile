@@ -24,6 +24,8 @@ define Package/jerryscript
 endef
 
 define Package/jerryscript/install
+	$(INSTALL_DIR) $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/build/bin/helloworld $(1)/usr/bin
 	$(INSTALL_DIR) $(1)/usr/lib/
 endef
 
