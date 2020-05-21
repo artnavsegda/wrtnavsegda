@@ -45,6 +45,11 @@ define Build/InstallDev
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-ext/handler.h $(1)/usr/include/jerryscript-ext
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-ext/module.h $(1)/usr/include/jerryscript-ext
 	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-ext/debugger.h $(1)/usr/include/jerryscript-ext
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-ext/arg.h $(1)/usr/include/jerryscript-ext
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-ext/arg.impl.h $(1)/usr/include/jerryscript-ext
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-ext/autorelease.h $(1)/usr/include/jerryscript-ext
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-ext/autorelease.impl.h $(1)/usr/include/jerryscript-ext
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/ipkg-install/usr/include/jerryscript-ext/handle-scope.h $(1)/usr/include/jerryscript-ext
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ipkg-install/usr/lib/libjerry-core.a $(1)/usr/lib/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ipkg-install/usr/lib/libjerry-ext.a $(1)/usr/lib/
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ipkg-install/usr/lib/libjerry-libm.a $(1)/usr/lib/
