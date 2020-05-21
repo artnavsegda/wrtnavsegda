@@ -27,6 +27,10 @@ define Package/jerryscript/install
 	$(INSTALL_DIR) $(1)/usr/lib/
 endef
 
+define Build/Compile
+	$(PKG_BUILD_DIR)/tools/build.py
+endef
+
 define Build/InstallDev
 	$(INSTALL_DIR) $(1)/usr/include
 	$(INSTALL_DIR) $(1)/usr/lib/
