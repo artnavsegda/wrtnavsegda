@@ -23,6 +23,8 @@ define Package/jerryscript
 	TITLE:=JavaScript engine
 endef
 
+CMAKE_OPTIONS += -DCMAKE_INSTALL_PREFIX=/usr -DJERRY_PROFILE=es2015-subset
+
 define Package/jerryscript/install
 	$(INSTALL_DIR) $(1)/usr/bin
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/ipkg-install/usr/bin/jerry $(1)/usr/bin
