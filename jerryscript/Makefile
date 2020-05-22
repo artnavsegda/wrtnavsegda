@@ -23,7 +23,7 @@ define Package/jerryscript
 	TITLE:=JavaScript engine
 endef
 
-CMAKE_OPTIONS += -DCMAKE_INSTALL_PREFIX=/usr -DJERRY_PROFILE=es2015-subset --DJERRY_ERROR_MESSAGES=ON
+CMAKE_OPTIONS += -DCMAKE_INSTALL_PREFIX=/usr -DJERRY_PROFILE=es2015-subset -DJERRY_ERROR_MESSAGES=ON
 
 define Package/jerryscript/install
 	$(INSTALL_DIR) $(1)/usr/bin
