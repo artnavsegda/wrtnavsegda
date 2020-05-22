@@ -31,13 +31,12 @@ endef
 # The last command is necessary to ensure our preparation instructions remain compatible with the patching system.
 define Build/Prepare
 	mkdir -p $(PKG_BUILD_DIR)
-	cp src/* $(PKG_BUILD_DIR)
 	$(Build/Patch)
 endef
 
 # Package build instructions; invoke the target-specific compiler to first compile the source file, and then to link the file into the final executable
 define Build/Compile
-	$(TARGET_CC) $(TARGET_LDFLAGS) -o $(PKG_BUILD_DIR)/$1 $(PKG_BUILD_DIR)/main.c $(PKG_BUILD_DIR)/exception.c $(PKG_BUILD_DIR)/irz-module.c -flto -ljerry-core -ljerry-ext -ljerry-port-default -ljerry-libm -lreadline
+	$(TARGET_CC) $(TARGET_LDFLAGS) -o $(PKG_BUILD_DIR)/$1 src/main.c src/exception.c src/irz-module.c -flto -ljerry-core -ljerry-ext -ljerry-port-default -ljerry-libm -lreadline
 endef
 
 define Package/jcli/install
