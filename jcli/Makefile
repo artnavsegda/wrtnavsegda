@@ -29,12 +29,12 @@ endef
 
 # Package build instructions; invoke the target-specific compiler to first compile the source file, and then to link the file into the final executable
 define Build/Compile
-	$(TARGET_CC) $(TARGET_LDFLAGS) -o $(PKG_BUILD_DIR)/$1 src/main.c src/exception.c src/irz-module.c -flto -ljerry-core -ljerry-ext -ljerry-port-default -ljerry-libm -lreadline
+	$(TARGET_CC) $(TARGET_LDFLAGS) -o $(PKG_BUILD_DIR)/src/$1 $(PKG_BUILD_DIR)/src/main.c $(PKG_BUILD_DIR)/src/exception.c $(PKG_BUILD_DIR)/src/irz-module.c -flto -ljerry-core -ljerry-ext -ljerry-port-default -ljerry-libm -lreadline
 endef
 
 define Package/jcli/install
 	$(INSTALL_DIR) $(1)/usr/bin
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/jcli $(1)/usr/bin
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/src/jcli $(1)/usr/bin
 endef
 
 $(eval $(call BuildPackage,jcli))
