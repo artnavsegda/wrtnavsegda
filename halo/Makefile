@@ -58,17 +58,19 @@ define Package/$(PKG_NAME)-preview/description
 	WEB (Svelte) at /halo/ alongside aurora
 endef
 
+# бренд выбирается при сборке (режим Vite): в сборку попадает только его оформление,
+# check-brand.mjs проверяет, что от другого бренда ничего не осталось
+HALO_BRAND:=$(if $(filter 1,$(DONYX)),donyx,irz)
+
 # сборка Vite: сжатые *.js.gz/*.css.gz — под исходными именами (lighttpd отдаёт .js/.css
-# с Content-Encoding: gzip, шаблон aurora), прочие сжатые — обратно; mockServiceWorker
-# нужен только Storybook
+# с Content-Encoding: gzip, шаблон aurora), прочие сжатые — обратно
 define Halo/Build
-	cd $(PKG_BUILD_DIR) && npx vite build --base $(2) --outDir $(1) --emptyOutDir
-	rm -f $(1)/mockServiceWorker.js $(1)/mockServiceWorker.js.gz
+	cd $(PKG_BUILD_DIR) && npx vite build --mode $(HALO_BRAND) --base $(2) --outDir $(1) --emptyOutDir
+	cd $(PKG_BUILD_DIR) && node scripts/check-brand.mjs $(HALO_BRAND) $(1)
 	cd $(1) && for f in $$$$(find . -name '*.gz'); do \
 		b=$$$${f%.gz}; \
 		case "$$$$b" in *.js|*.css) mv "$$$$f" "$$$$b" ;; *) gunzip -f "$$$$f" ;; esac; \
 	done
-	$(if $(filter 1,$(DONYX)),$(SED) 's/data-theme="irz"/data-theme="donyx"/' $(1)/index.html)
 endef
 
 define Build/Compile
