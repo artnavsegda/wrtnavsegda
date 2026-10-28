@@ -8,9 +8,9 @@ PKG_VERSION:=$(if $(FW_MAJOR),$(FW_MAJOR).$(FW_MINOR),0.1)
 PKG_RELEASE:=$(if $(FW_MAJOR),$(call calc_pkg_release,$(CURDIR),OSS),1)
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/artnavsegda/donyx.git
+PKG_SOURCE_URL:=git@github.com:artnavsegda/donyx.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=348a7e8470d6cd7ba53b947ad36b969bb0f9112f
+PKG_SOURCE_VERSION:=03b92581d9d815a04da339aaec2004ccd89b0453
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_MIRROR_HASH:=skip
 
