@@ -8,9 +8,9 @@ PKG_VERSION:=$(if $(FW_MAJOR),$(FW_MAJOR).$(FW_MINOR),0.1)
 PKG_RELEASE:=$(if $(FW_MAJOR),$(call calc_pkg_release,$(CURDIR),OSS),1)
 
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=https://github.com/artnavsegda/horizon-uc.git
+PKG_SOURCE_URL:=git@github.com:artnavsegda/horizon-uc.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=1fecbdf8ff8b690490b6d81211fc2e11183362f8
+PKG_SOURCE_VERSION:=f07aa051cac64dd0a77fc76cbcdcdc31a532f960
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_MIRROR_HASH:=skip
 
