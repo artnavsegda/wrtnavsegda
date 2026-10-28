@@ -1,0 +1,126 @@
+#!/bin/sh /etc/rc.common
+# Copyright (C) 2006-2011 OpenWrt.org
+
+START=50
+STOP=50
+
+USE_PROCD=1
+PROG=/usr/sbin/lighttpd
+
+TEMPLATE=/etc/lighttpd/template.conf
+WORK_DIR="/var/run/lighttpd"
+
+[ -f "/usr/share/horizont/lib/envs.sh" ] && . /usr/share/horizont/lib/envs.sh
+
+validate_conf() {
+    $PROG -tt -f $WORK_DIR/lighttpd.conf >/dev/null 2>&1 || {
+        echo "validation failed"
+        return 1
+    }
+}
+
+generate_cert() {
+    if [[ ! -x "/usr/bin/openssl" || ! -f "/etc/ssl/https-tls.cnf" ]]; then
+        logger -p 24.3 -t "lighttpd[$$]" "unable to generate a certificate"
+        return 1
+    fi
+
+    mkdir -p $CERT_STORAGE_PATH
+
+    openssl req -x509 -nodes -days 3650 -newkey rsa \
+        -keyout $CERT_STORAGE_PATH/https-tls.crt \
+        -out $CERT_STORAGE_PATH/https-tls.crt \
+        -sha256 \
+        -config /etc/ssl/https-tls.cnf \
+        -extensions 'v3_req' &> /dev/null
+}
+
+valid_cert() {
+    openssl x509 -checkend 0 -noout -in "$1" >/dev/null 2>&1 &&
+    openssl pkey -noout -in "$1" >/dev/null 2>&1
+}
+
+_configure() {
+    mkdir -p $WORK_DIR
+    local CONF="$WORK_DIR/lighttpd.conf"
+
+    config_load lighttpd
+    config_get disabled    main disabled       "0"
+    config_get https_port  main https_port     "443"
+    config_get tls         main tls            "1.2"
+    config_get cert        main cert           ""
+
+    [ "$disabled" = "1" ] && return 1
+
+    if [ -z "$cert" ]; then
+        if [ -f "$CERT_STORAGE_PATH/https-tls.crt" ]; then
+            if ! valid_cert "$CERT_STORAGE_PATH/https-tls.crt"; then
+                logger -p 24.3 -t "lighttpd[$$]" "certificate invalid"
+                generate_cert && logger -p 24.5 -t "lighttpd[$$]" "certificate created"
+            fi
+        else
+            logger -p 24.3 -t "lighttpd[$$]" "certificate not found"
+            generate_cert && logger -p 24.5 -t "lighttpd[$$]" "certificate created"
+        fi
+        cert="https-tls.crt"
+        uci set lighttpd.main.cert="https-tls.crt"
+        uci commit lighttpd
+        logger -p 24.5 -t "lighttpd[$$]" "config updated"
+
+    elif [ ! -f "$CERT_STORAGE_PATH/$cert" ]; then
+        logger -p 24.3 -t "lighttpd[$$]" "certificate '$cert' not found"
+        generate_cert && logger -p 24.5 -t "lighttpd[$$]" "certificate created"
+        cert="https-tls.crt"
+        uci set lighttpd.main.cert="https-tls.crt"
+        uci commit lighttpd
+    fi
+
+    [ -f "$CERT_STORAGE_PATH/$cert" ] || return 1
+
+    echo 'server.pid-file = "'$WORK_DIR'/lighttpd.pid"' > $CONF
+    echo "server.port = ${https_port}" >> $CONF
+
+    cat <<EOF >> $CONF
+## SSL config
+server.modules += ("mod_openssl")
+ssl.read-ahead = "disable"
+\$SERVER["socket"] == ":${https_port}" {
+    ssl.engine = "enable"
+    ssl.pemfile = "$CERT_STORAGE_PATH/${cert}"
+    ssl.openssl.ssl-conf-cmd = ("MinProtocol" => "TLSv${tls}",
+                            "Options" => "ServerPreference,-SessionTicket",
+                            "CipherString" => "EECDH+AESGCM:EDH+AESGCM")
+}
+
+EOF
+
+    [ "$https_port" = "80" ] || cat <<EOF >> $CONF
+## redirect from HTTP to HTTPS
+server.modules += ( "mod_redirect" )
+\$SERVER["socket"] == ":80" {
+    \$HTTP["host"] =~ "^(.+?)(:\d+)?$" {
+        url.redirect = ("" => "https://%1:${https_port}\${url.path}\${qsa}")
+    } else {
+        url.redirect = ("" => "https://\${url.authority}\${url.path}\${qsa}")
+    }
+    url.redirect-code = 308
+}
+
+EOF
+
+    cat $TEMPLATE >> $CONF
+}
+
+start_service() {
+    _configure || return 0
+
+    validate_conf || exit 1
+
+    procd_open_instance
+    procd_set_param command $PROG -D -f $WORK_DIR/lighttpd.conf
+    procd_close_instance
+}
+
+reload_service() {
+    procd_send_signal lighttpd "" SIGUSR1
+}

@@ -1,0 +1,55 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "documentation": ["local", "global"],
+    "title": "WEB-server",
+    "ruDescription": "Настройки Веб-доступа",
+    "description": "Web Interface settings",
+    "type": "object",
+    "required": ["cert"],
+    "properties": {
+        "disabled": {
+            "$ref": "/defaults#/definitions/disabled"
+        },
+
+        "https-port": {
+            "$ref": "/defaults#/definitions/port",
+            "ruDescription": "Порт для обработки входящих HTTPS запросов",
+            "description": "HTTPS listening port for encrypted connection requests",
+            "title": "HTTPS Port",
+            "default": 443
+        },
+
+        "cert": {
+            "$ref": "/defaults#/definitions/cert",
+            "title": "Certificate"
+        },
+
+        "tls": {
+            "type": "string",
+            "enum": ["1.1", "1.2", "1.3"],
+            "title": "Min TLS-version",
+            "ruDescription": "Минимальная разрешенная версия TLS",
+            "description": "Minimum allowed TLS version for secure protocol negotiation"
+        }
+    },
+
+    "apply": {
+        "exec": "subscript/system/access-web.uc",
+        "args": ["apply"]
+    },
+
+    "status": {
+        "exec": "subscript/system/access-web.uc",
+        "args": ["status"]
+    },
+
+    "set": {
+        "exec": "subscript/system/access-web.uc",
+        "args": ["set"]
+    },
+    
+    "acquire": {
+        "exec": "subscript/system/access-web.uc",
+        "args": ["get"]
+    }
+}

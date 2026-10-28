@@ -1,0 +1,11 @@
+
+set_lighttpd() {
+	touch /etc/config/lighttpd
+
+	uci -q set lighttpd.main=server
+	uci -q set lighttpd.main.disabled='0'
+	uci -q set lighttpd.main.https_port='443'
+	uci -q set lighttpd.main.tls='1.2'
+}
+
+[ -s "/etc/config/lighttpd" ] || set_lighttpd
