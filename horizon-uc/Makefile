@@ -14,6 +14,12 @@ PKG_SOURCE_VERSION:=1fecbdf8ff8b690490b6d81211fc2e11183362f8
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_MIRROR_HASH:=skip
 
+# отладка: собрать из рабочей копии вместо коммита — HORIZON_UC_SRC=<каталог> make …
+# (USE_SOURCE_DIR в командной строке подменил бы исходники и всем зависимостям)
+ifneq ($(HORIZON_UC_SRC),)
+  USE_SOURCE_DIR:=$(HORIZON_UC_SRC)
+endif
+
 PKG_MAINTAINER:=iRZ Electronics <irz.net>
 
 include $(INCLUDE_DIR)/package.mk
