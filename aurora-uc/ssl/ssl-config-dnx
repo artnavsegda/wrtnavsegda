@@ -1,0 +1,19 @@
+[req]
+distinguished_name = dn
+x509_extensions = v3_req
+prompt = no
+default_bits = 2048
+
+[dn]
+C = CN
+O = Dongguan Onyx Electronics Co.Ltd
+CN = Router
+OU = Network
+
+[v3_req]
+subjectAltName = @alt_names
+keyUsage = critical, digitalSignature, keyEncipherment
+extendedKeyUsage = serverAuth
+
+[alt_names]
+IP.1 = 192.168.12.1
