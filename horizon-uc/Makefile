@@ -78,12 +78,18 @@ define Package/$(PKG_NAME)/install
 	# мок — только стенд: на устройстве отсутствующий скрипт остаётся ошибкой
 	$(RM) $(1)/usr/share/horizon/script/mock.uc
 
-	# CGI веб-интерфейсов: lighttpd выполняет /script/* по #!
-	$(INSTALL_DIR) $(1)/usr/share/horizont/script/dashboard.d
+	# CGI веб-интерфейсов: lighttpd выполняет /script/* по #!. В ветке scgi сводку отдаёт
+	# horizon (разделы dashboard/, /script/dashboard — SCGI), в main — CGI с dashboard.d
+	$(INSTALL_DIR) $(1)/usr/share/horizont/script
 	for f in wrapper auth logout dashboard upload; do \
+		[ ! -f $(PKG_BUILD_DIR)/www/$$$$f.uc ] || \
 		$(INSTALL_BIN) $(PKG_BUILD_DIR)/www/$$$$f.uc $(1)/usr/share/horizont/script/$$$$f; \
 	done
-	$(CP) $(PKG_BUILD_DIR)/www/dashboard.d/* $(1)/usr/share/horizont/script/dashboard.d/
+	if [ -d $(PKG_BUILD_DIR)/www/dashboard.d ]; then \
+		$(INSTALL_DIR) $(1)/usr/share/horizont/script/dashboard.d; \
+		$(CP) $(PKG_BUILD_DIR)/www/dashboard.d/* $(1)/usr/share/horizont/script/dashboard.d/; \
+	fi
+	[ ! -d $(PKG_BUILD_DIR)/dashboard ] || $(CP) $(PKG_BUILD_DIR)/dashboard $(1)/usr/share/horizon/
 
 	# из прод-horizont: их подключают скрипты и хуки пакетов iRZ
 	$(INSTALL_DIR) $(1)/usr/share/horizont/lib $(1)/usr/share/ucode/horizont
