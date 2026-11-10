@@ -10,13 +10,18 @@ PKG_RELEASE:=$(if $(FW_MAJOR),$(call calc_pkg_release,$(CURDIR),OSS),1)
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git@github.com:artnavsegda/donyx.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=03b92581d9d815a04da339aaec2004ccd89b0453
+PKG_SOURCE_VERSION:=cbe5e5c2e0d6b350a70c7c9589cf57b0aabfebf0
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_MIRROR_HASH:=skip
 
 PKG_MAINTAINER:=iRZ Electronics <irz.net>
 
 include $(INCLUDE_DIR)/package.mk
+
+# общий рантайм Halo и модулей (halo-mod-*): Svelte этой версии и набор @halo/ui в
+# /usr/share/halo/runtime/. Модуль собран под точную версию Svelte и зависит от виртуального
+# пакета halo-svelte-<версия>; версия — как в package.json donyx (проверяется при сборке)
+HALO_SVELTE:=5.57.3
 
 define Package/$(PKG_NAME)/Default
 	SECTION:=custom
@@ -37,6 +42,7 @@ $(call Package/$(PKG_NAME)/Default)
 		+lighttpd-mod-redirect \
 		+lighttpd-mod-setenv
 	CONFLICTS:=aurora
+	PROVIDES:=halo-svelte-$(HALO_SVELTE)
 endef
 
 define Package/$(PKG_NAME)/config
@@ -66,7 +72,10 @@ HALO_BRAND:=$(if $(filter 1,$(DONYX)),donyx,irz)
 # с Content-Encoding: gzip, шаблон aurora), прочие сжатые — обратно
 define Halo/Build
 	cd $(PKG_BUILD_DIR) && npx vite build --mode $(HALO_BRAND) --base $(2) --outDir $(1) --emptyOutDir
-	cd $(PKG_BUILD_DIR) && node scripts/check-brand.mjs $(HALO_BRAND) $(1)
+	# рантайм: Halo импортирует Svelte из ./runtime/ (относительно своих assets/)
+	cd $(PKG_BUILD_DIR) && npx vite build -c vite.runtime.config.ts --mode $(HALO_BRAND) --outDir $(1)/runtime --emptyOutDir
+	# проверка бренда — только в исходнике с раздельной сборкой (ветка split donyx)
+	cd $(PKG_BUILD_DIR) && if [ -f scripts/check-brand.mjs ]; then node scripts/check-brand.mjs $(HALO_BRAND) $(1); fi
 	cd $(1) && for f in $$$$(find . -name '*.gz'); do \
 		b=$$$${f%.gz}; \
 		case "$$$$b" in *.js|*.css) mv "$$$$f" "$$$$b" ;; *) gunzip -f "$$$$f" ;; esac; \
@@ -75,6 +84,8 @@ endef
 
 define Build/Compile
 	cd $(PKG_BUILD_DIR) && npm ci --no-audit --no-fund
+	# версия Svelte в package.json должна совпадать с HALO_SVELTE (рантайм модулей)
+	test "$$$$(node -p "require('$(PKG_BUILD_DIR)/node_modules/svelte/package.json').version")" = "$(HALO_SVELTE)"
 	$(call Halo/Build,$(PKG_BUILD_DIR)/pkg-files,/)
 	$(call Halo/Build,$(PKG_BUILD_DIR)/pkg-files-preview,/halo/)
 endef
@@ -84,6 +95,9 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/usr/share/halo
 	$(LN) -sf /usr/share/horizont/schema $(1)/usr/share/halo/schema
 	$(CP) $(PKG_BUILD_DIR)/pkg-files/* $(1)/usr/share/halo/
+	# модули (пакеты halo-mod-*) кладут сюда свои сборки, а CGI — в script/<имя>/;
+	# модули сводки — в modules/dashboard/<label>/ (Halo ищет их по label раздела)
+	$(INSTALL_DIR) $(1)/usr/share/halo/modules/dashboard
 
 	$(INSTALL_DIR) $(1)/etc/ssl/
 ifeq ($(DONYX), 1)
@@ -100,6 +114,14 @@ endif
 	$(LN) -sf /usr/share/horizont/script/dashboard.d $(1)/usr/share/halo/script/
 	$(LN) -sf /usr/share/horizont/script/upload      $(1)/usr/share/halo/script/
 	$(LN) -sf /usr/share/horizont/script/wrapper     $(1)/usr/share/halo/script/
+endef
+
+# манифест модулей (modules/manifest.js, его подключает index.html) — по установленным модулям;
+# при обновлении halo каталог modules/ остаётся, файл пересобирается
+define Package/$(PKG_NAME)/postinst
+#!/bin/sh
+sh "$${IPKG_INSTROOT}/usr/libexec/halo-modules"
+exit 0
 endef
 
 define Package/$(PKG_NAME)-preview/install
