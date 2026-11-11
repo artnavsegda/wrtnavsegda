@@ -25,6 +25,8 @@ MODNAMES="halo-mod-software halo-mod-firmware halo-mod-console halo-mod-dash-hba
 
 modules_checks() { # $1 — корень Halo в URL ("/halo/" или "/")
 	B="$1"
+	# lighttpd отдаёт все .js/.css с Content-Encoding: gzip — несжатый файл браузер не загрузит
+	check "все .js/.css Halo и модулей сжаты" "! for f in \$(find /usr/share/halo /usr/share/aurora/halo -name '*.js' -o -name '*.css' 2>/dev/null); do gzip -t \"\$f\" 2>/dev/null || echo \"\$f\"; done | grep -q ."
 	check "manifest: preload hardware" "gunzip -c /usr/share/halo/modules/manifest.js | grep -q 'dashboard/hardware'"
 	check "manifest: clock не preload" "! gunzip -c /usr/share/halo/modules/manifest.js | grep -q 'dashboard/clock'"
 	http "${B}modules/manifest.js" 200

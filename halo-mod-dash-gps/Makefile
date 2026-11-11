@@ -20,6 +20,12 @@ define Package/$(PKG_NAME)/description
 	Halo dashboard: GPS receiver values, map and globe
 endef
 
+# условная точка карты без фиксации (нет координат) — штаб-квартира бренда сборки: iRZ —
+# Санкт-Петербург, Donyx — Шэньчжэнь (маркер карты donyx.com/contact-us); "<широта>,<долгота>"
+GPS_DEFAULT_IRZ ?= 59.9386,30.3141
+GPS_DEFAULT_DNX ?= 22.5278,114.0765
+export VITE_GPS_DEFAULT:=$(if $(filter 1,$(DONYX)),$(GPS_DEFAULT_DNX),$(GPS_DEFAULT_IRZ))
+
 define Build/Compile
 	$(call Halo/ModuleCompile,dash-gps)
 endef

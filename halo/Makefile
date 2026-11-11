@@ -70,6 +70,11 @@ define Halo/Build
 		b=$$$${f%.gz}; \
 		case "$$$$b" in *.js|*.css) mv "$$$$f" "$$$$b" ;; *) gunzip -f "$$$$f" ;; esac; \
 	done
+	# файлы меньше порога сжатия Vite (1 КБ: svelte.js рантайма и т. п.) остались несжатыми,
+	# а lighttpd отдаёт все .js/.css с Content-Encoding: gzip — сжать и их
+	cd $(1) && for f in $$$$(find . -name '*.js' -o -name '*.css'); do \
+		gzip -t "$$$$f" 2>/dev/null || { gzip -9 -n -c "$$$$f" > "$$$$f.tmp" && mv "$$$$f.tmp" "$$$$f"; }; \
+	done
 endef
 
 define Build/Compile

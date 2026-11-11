@@ -43,9 +43,9 @@ $(call Halo/ResetSchemas)
 [ -n "$${IPKG_INSTROOT}" ] && exit 0
 # штатная служба пакета ttyd — вход /bin/login на всех адресах (7681): выключить, консоль —
 # только своя, на lo (7682) за lighttpd
-[ -x /etc/init.d/ttyd ] && { /etc/init.d/ttyd stop; /etc/init.d/ttyd disable; }
+[ -x /etc/init.d/ttyd ] && { /etc/init.d/ttyd stop 2>/dev/null; /etc/init.d/ttyd disable; }
 /etc/init.d/halo-console enable
-/etc/init.d/halo-console restart
+/etc/init.d/halo-console restart 2>/dev/null
 $(call Halo/RestartWeb)
 exit 0
 endef
@@ -53,7 +53,7 @@ endef
 define Package/$(PKG_NAME)/prerm
 #!/bin/sh
 [ -n "$${IPKG_INSTROOT}" ] && exit 0
-/etc/init.d/halo-console stop
+/etc/init.d/halo-console stop 2>/dev/null
 /etc/init.d/halo-console disable
 exit 0
 endef
