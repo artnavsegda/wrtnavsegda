@@ -39,6 +39,15 @@ if [ "$1" = "--detach-aurora" ]; then
 	exit 0
 fi
 
+# --- каталоги удалённых модулей: opkg оставляет их пустыми (modules/<имя>, modules/dashboard/<label>;
+# script/<имя> — ниже, вместе со ссылками у aurora)
+if [ -d "$D" ]; then
+	for d in "$D"/* "$D"/dashboard/*; do
+		[ -d "$d" ] && [ ! -L "$d" ] && [ "$d" != "$D/dashboard" ] || continue
+		[ -n "$(ls -A "$d")" ] || rmdir "$d"
+	done
+fi
+
 # --- манифест
 if [ -d "$D" ]; then
 	tmp="$D/.manifest.js.$$"
@@ -55,7 +64,8 @@ if [ -d "$D" ]; then
 			case "$key" in *[!a-z0-9/-]*) continue ;; esac
 			[ -f "$dir/index.js" ] || continue
 			echo "m[\"$key\"] = import(\"./$key/index.js\").catch((e) => (console.warn(\"halo module $key:\", e), null));"
-			[ -f "$dir/style.css" ] && echo "css(\"./$key/style.css\");"
+			# if, а не &&: без style.css у последнего модуля блок вернул бы 1 и манифест не записался
+			if [ -f "$dir/style.css" ]; then echo "css(\"./$key/style.css\");"; fi
 		done
 	} > "$tmp" && gzip -9 -n -c "$tmp" > "$tmp.gz" && mv -f "$tmp.gz" "$D/manifest.js"
 fi
