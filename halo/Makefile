@@ -1,36 +1,28 @@
 include $(TOPDIR)/rules.mk
 -include ../fw-version.mk
 
+# Веб-интерфейс Halo для прод-прошивки (irzOS 1.2, horizont) — два варианта:
+#   halo         — замена aurora: свой lighttpd (init, шаблон с корнем /usr/share/halo, TLS)
+#                  и схема /system/access/web — те же файлы, что у aurora (CONFLICTS aurora:
+#                  сначала opkg remove aurora);
+#   halo-preview — рядом с aurora: /halo/ на её веб-сервере (корень /usr/share/aurora).
+# Модули (halo-mod-*) ставятся на любой: сборки модулей — в /usr/share/halo/modules (у preview
+# на него ссылается /usr/share/aurora/halo/modules), CGI — в /usr/share/halo/script/<имя> (у
+# preview ссылки в /usr/share/aurora/script ставит halo-modules), настройки веб-сервера —
+# /etc/lighttpd/halo.d/*.conf (подключает шаблон halo, у preview — строка в шаблоне aurora).
 PKG_NAME:=halo
-# в irzos-feeds версия и номер выпуска — как у остальных пакетов (fw-version.mk),
-# вне его (локальный фид) — постоянные
-PKG_VERSION:=$(if $(FW_MAJOR),$(FW_MAJOR).$(FW_MINOR),0.1)
-PKG_RELEASE:=$(if $(FW_MAJOR),$(call calc_pkg_release,$(CURDIR),OSS),1)
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=git@github.com:artnavsegda/donyx.git
-PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=cbe5e5c2e0d6b350a70c7c9589cf57b0aabfebf0
-PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
-PKG_MIRROR_HASH:=skip
-
-PKG_MAINTAINER:=iRZ Electronics <irz.net>
-
+include ../halo.mk
 include $(INCLUDE_DIR)/package.mk
-
-# общий рантайм Halo и модулей (halo-mod-*): Svelte этой версии и набор @halo/ui в
-# /usr/share/halo/runtime/. Модуль собран под точную версию Svelte и зависит от виртуального
-# пакета halo-svelte-<версия>; версия — как в package.json donyx (проверяется при сборке)
-HALO_SVELTE:=5.57.3
 
 define Package/$(PKG_NAME)/Default
 	SECTION:=custom
 	CATEGORY:=irzOS
 	PKGARCH:=all
+	# рантайм модулей: Svelte этой версии и @halo/ui в <корень Halo>/runtime/
+	PROVIDES:=halo-svelte-$(HALO_SVELTE)
 endef
 
-# замена aurora: свой lighttpd (init, шаблон с корнем /usr/share/halo, TLS) и схема
-# /system/access/web — те же, что у aurora
 define Package/$(PKG_NAME)
 $(call Package/$(PKG_NAME)/Default)
 	TITLE:=irzOS web interface (Halo)
@@ -41,8 +33,7 @@ $(call Package/$(PKG_NAME)/Default)
 		+!LINUX_4_14:lighttpd-mod-openssl \
 		+lighttpd-mod-redirect \
 		+lighttpd-mod-setenv
-	CONFLICTS:=aurora
-	PROVIDES:=halo-svelte-$(HALO_SVELTE)
+	CONFLICTS:=aurora halo-preview
 endef
 
 define Package/$(PKG_NAME)/config
@@ -53,7 +44,6 @@ define Package/$(PKG_NAME)/description
 	WEB (Svelte), replaces aurora
 endef
 
-# рядом с aurora: /halo/ на её веб-сервере (корень /usr/share/aurora)
 define Package/$(PKG_NAME)-preview
 $(call Package/$(PKG_NAME)/Default)
 	TITLE:=irzOS web interface (Halo), preview next to aurora
@@ -83,11 +73,18 @@ define Halo/Build
 endef
 
 define Build/Compile
-	cd $(PKG_BUILD_DIR) && npm ci --no-audit --no-fund
-	# версия Svelte в package.json должна совпадать с HALO_SVELTE (рантайм модулей)
-	test "$$$$(node -p "require('$(PKG_BUILD_DIR)/node_modules/svelte/package.json').version")" = "$(HALO_SVELTE)"
+	$(call Halo/Npm)
 	$(call Halo/Build,$(PKG_BUILD_DIR)/pkg-files,/)
 	$(call Halo/Build,$(PKG_BUILD_DIR)/pkg-files-preview,/halo/)
+endef
+
+# общее обоих вариантов: каталоги модулей, утилита манифеста, настройки веб-сервера модулей
+define Halo/InstallCommon
+	$(INSTALL_DIR) $(1)/usr/share/halo/modules/dashboard $(1)/usr/share/halo/script
+	$(INSTALL_DIR) $(1)/usr/libexec
+	$(INSTALL_BIN) ./openwrt/usr/libexec/halo-modules $(1)/usr/libexec/
+	$(INSTALL_DIR) $(1)/etc/lighttpd/halo.d
+	$(INSTALL_DATA) ./files/halo.d/00-halo.conf $(1)/etc/lighttpd/halo.d/
 endef
 
 define Package/$(PKG_NAME)/install
@@ -95,9 +92,7 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/usr/share/halo
 	$(LN) -sf /usr/share/horizont/schema $(1)/usr/share/halo/schema
 	$(CP) $(PKG_BUILD_DIR)/pkg-files/* $(1)/usr/share/halo/
-	# модули (пакеты halo-mod-*) кладут сюда свои сборки, а CGI — в script/<имя>/;
-	# модули сводки — в modules/dashboard/<label>/ (Halo ищет их по label раздела)
-	$(INSTALL_DIR) $(1)/usr/share/halo/modules/dashboard
+	$(call Halo/InstallCommon,$(1))
 
 	$(INSTALL_DIR) $(1)/etc/ssl/
 ifeq ($(DONYX), 1)
@@ -106,7 +101,6 @@ else
 	$(CP) ./ssl/ssl-config-irz $(1)/etc/ssl/https-tls.cnf
 endif
 
-	$(INSTALL_DIR) $(1)/usr/share/halo/script
 	$(LN) -sf /usr/share/horizont/script/auth        $(1)/usr/share/halo/script/
 	$(LN) -sf /usr/share/horizont/script/logout      $(1)/usr/share/halo/script/
 	$(LN) -sf /usr/share/horizont/script/board       $(1)/usr/share/halo/script/
@@ -117,16 +111,56 @@ endif
 endef
 
 # манифест модулей (modules/manifest.js, его подключает index.html) — по установленным модулям;
-# при обновлении halo каталог modules/ остаётся, файл пересобирается
+# веб-сервер — на шаблоне halo (замена aurora: при её удалении lighttpd остановлен и выключен)
 define Package/$(PKG_NAME)/postinst
 #!/bin/sh
 sh "$${IPKG_INSTROOT}/usr/libexec/halo-modules"
+[ -n "$${IPKG_INSTROOT}" ] && exit 0
+/etc/init.d/lighttpd enable
+/etc/init.d/lighttpd restart
 exit 0
 endef
 
+# opkg не удаляет ссылки на каталоги (schema, script/dashboard.d) и не знает о манифесте — убрать
+define Package/$(PKG_NAME)/postrm
+#!/bin/sh
+[ -n "$${IPKG_INSTROOT}" ] && exit 0
+rm -f /usr/share/halo/schema /usr/share/halo/script/dashboard.d /usr/share/halo/modules/manifest.js
+exit 0
+endef
+
+# рядом с aurora: сборка под /halo/, модули — общий каталог /usr/share/halo/modules
 define Package/$(PKG_NAME)-preview/install
 	$(INSTALL_DIR) $(1)/usr/share/aurora/halo
 	$(CP) $(PKG_BUILD_DIR)/pkg-files-preview/* $(1)/usr/share/aurora/halo/
+	$(LN) -sf /usr/share/halo/modules $(1)/usr/share/aurora/halo/modules
+	$(call Halo/InstallCommon,$(1))
+endef
+
+# halo-modules: манифест, ссылки на CGI модулей в /usr/share/aurora/script и подключение
+# /etc/lighttpd/halo.d в шаблон aurora; веб-сервер — перезапуск с ними
+define Package/$(PKG_NAME)-preview/postinst
+#!/bin/sh
+sh "$${IPKG_INSTROOT}/usr/libexec/halo-modules"
+[ -n "$${IPKG_INSTROOT}" ] && exit 0
+/etc/init.d/lighttpd restart
+exit 0
+endef
+
+# шаблон aurora — без halo.d, ссылки на CGI модулей — убрать (модули остаются в /usr/share/halo)
+define Package/$(PKG_NAME)-preview/prerm
+#!/bin/sh
+[ -n "$${IPKG_INSTROOT}" ] && exit 0
+sh /usr/libexec/halo-modules --detach-aurora
+exit 0
+endef
+
+define Package/$(PKG_NAME)-preview/postrm
+#!/bin/sh
+[ -n "$${IPKG_INSTROOT}" ] && exit 0
+rm -f /usr/share/halo/modules/manifest.js
+/etc/init.d/lighttpd restart
+exit 0
 endef
 
 $(eval $(call BuildPackage,$(PKG_NAME)))
