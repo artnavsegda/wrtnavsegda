@@ -39,13 +39,28 @@ define Package/$(PKG_NAME)/install
 	sed -e 's|@FIRMWARE_URL@|$(FIRMWARE_URL)|' -e 's|@BRAND@|$(FIRMWARE_BRAND)|' \
 		$(PKG_BUILD_DIR)/modules/firmware/schema/system/firmware.json \
 		> $(1)/usr/share/horizont/schema/system/firmware.json
-	$(INSTALL_DIR) $(1)/usr/share/halo/script/firmware $(1)/etc/lighttpd/halo.d
+	$(INSTALL_DIR) $(1)/usr/share/halo/script/firmware $(1)/usr/share/halo/lighttpd
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/modules/firmware/backend/script/firmware/* $(1)/usr/share/halo/script/firmware/
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/modules/firmware/backend/lighttpd/50-halo-firmware.conf $(1)/etc/lighttpd/halo.d/
+	$(INSTALL_DATA) $(PKG_BUILD_DIR)/modules/firmware/backend/lighttpd/50-halo-firmware.conf $(1)/usr/share/halo/lighttpd/
+endef
+
+# прокси каталога — в конфиг lighttpd, только если есть mod_proxy: без модуля lighttpd с этим
+# конфигом не запускается и пропадает весь веб (так было на R50). Без прокси модуль работает,
+# каталог buildbot — нет (ручная загрузка образа остаётся)
+define Firmware/ProxyConf
+[ -n "$${IPKG_INSTROOT}" ] || {
+	if [ -f /usr/lib/lighttpd/mod_proxy.so ]; then
+		ln -sf /usr/share/halo/lighttpd/50-halo-firmware.conf /etc/lighttpd/halo.d/50-halo-firmware.conf
+	else
+		rm -f /etc/lighttpd/halo.d/50-halo-firmware.conf
+		echo "halo-mod-firmware: no lighttpd mod_proxy, the firmware catalog is disabled" >&2
+	fi
+}
 endef
 
 define Package/$(PKG_NAME)/postinst
 #!/bin/sh
+$(call Firmware/ProxyConf)
 $(call Halo/Modules)
 $(call Halo/ResetSchemas)
 $(call Halo/RestartWeb)
@@ -54,6 +69,7 @@ endef
 
 define Package/$(PKG_NAME)/postrm
 #!/bin/sh
+[ -n "$${IPKG_INSTROOT}" ] || rm -f /etc/lighttpd/halo.d/50-halo-firmware.conf
 $(call Halo/Modules)
 $(call Halo/ResetSchemas)
 $(call Halo/RestartWeb)

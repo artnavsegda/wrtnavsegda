@@ -16,7 +16,8 @@ const SCHEMA_PATH = '/system/repository';
 const HORIZONT_PIPE = '/var/run/horizont.pipe';
 const CUSTOM = DIR + '/customfeeds.conf';
 const NAME = /^[A-Za-z0-9_.-]{1,64}$/;
-const URL = /^(https?|ftp|file):\/\/[^\s'"]+$/;
+// без \s в […]: в ucode (POSIX ERE) там это «\» и «s» (адрес с буквой s отвергался)
+const URL = /^(https?|ftp|file):\/\/[^ \t'"]+$/;
 // строка фида: «[# ]src[/gz] <имя> <адрес>»
 const LINE = /^(\s*#\s*)?(src\/gz|src)\s+(\S+)\s+(\S+)\s*$/;
 

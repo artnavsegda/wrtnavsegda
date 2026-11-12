@@ -25,7 +25,7 @@
 					"type": "string",
 					"title": "URL",
 					"description": "Repository address: directory with the Packages list (http, https, ftp or file)",
-					"pattern": "^(https?|ftp|file)://[^\\s'\"]+$"
+					"pattern": "^(https?|ftp|file)://[^ '\"]+$"
 				},
 				"compressed": {
 					"type": "boolean",
@@ -77,7 +77,7 @@
 					"type": "string",
 					"title": "URL",
 					"description": "Repository address (http, https, ftp or file)",
-					"pattern": "^(https?|ftp|file)://[^\\s'\"]+$"
+					"pattern": "^(https?|ftp|file)://[^ '\"]+$"
 				},
 				"compressed": {
 					"type": "boolean",
