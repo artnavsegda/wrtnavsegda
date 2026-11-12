@@ -1,0 +1,116 @@
+{
+	"$schema": "http://json-schema.org/schema#",
+	"title": "Repositories",
+	"description": "Package repositories (opkg feeds) from /etc/opkg/*.conf",
+	"type": "object",
+	"namesake": "name",
+	"noExport": true,
+	"showParams": ["url", "disabled", "packages", "updated"],
+	"patternProperties": {
+		".*": {
+			"type": "object",
+			"properties": {
+				"name": {
+					"type": "string",
+					"description": "Repository name (unique, the name of its package list)",
+					"pattern": "^[A-Za-z0-9_.-]{1,64}$",
+					"readOnly": true
+				},
+				"disabled": {
+					"type": "boolean",
+					"description": "Disable the repository (the line is kept commented out)",
+					"default": false
+				},
+				"url": {
+					"type": "string",
+					"title": "URL",
+					"description": "Repository address: directory with the Packages list (http, https, ftp or file)",
+					"pattern": "^(https?|ftp|file)://[^\\s'\"]+$"
+				},
+				"compressed": {
+					"type": "boolean",
+					"description": "Compressed package list (Packages.gz: src/gz), otherwise Packages (src)",
+					"default": true
+				},
+				"file": {
+					"type": "string",
+					"description": "Configuration file of the repository in /etc/opkg",
+					"readOnly": true
+				},
+				"packages": {
+					"type": "number",
+					"description": "Packages in the downloaded list (after opkg update)",
+					"readOnly": true
+				},
+				"updated": {
+					"type": "string",
+					"description": "When the package list was downloaded (opkg update)",
+					"readOnly": true
+				}
+			}
+		}
+	},
+
+	"actions": {
+		"update": {
+			"exec": "subscript/system/repository.uc",
+			"args": ["update"],
+			"description": "Download the package lists of all repositories (opkg update)",
+			"reload": true,
+			"wait": true
+		}
+	},
+
+	"add": {
+		"exec": "subscript/system/repository.uc",
+		"args": ["add"],
+		"merge": true,
+		"schema": {
+			"required": ["name", "url"],
+			"properties": {
+				"name": {
+					"type": "string",
+					"description": "Repository name",
+					"pattern": "^[A-Za-z0-9_.-]{1,64}$"
+				},
+				"url": {
+					"type": "string",
+					"title": "URL",
+					"description": "Repository address (http, https, ftp or file)",
+					"pattern": "^(https?|ftp|file)://[^\\s'\"]+$"
+				},
+				"compressed": {
+					"type": "boolean",
+					"description": "Compressed package list (Packages.gz)",
+					"default": true
+				},
+				"update": {
+					"type": "boolean",
+					"description": "Download the package lists after adding (opkg update)",
+					"default": false
+				}
+			}
+		}
+	},
+
+	"set": {
+		"exec": "subscript/system/repository.uc",
+		"args": ["set"]
+	},
+
+	"apply": {
+		"exec": "subscript/system/repository.uc",
+		"args": ["apply"]
+	},
+
+	"delete": {
+		"exec": "subscript/system/repository.uc",
+		"args": ["delete"],
+		"reload": true
+	},
+
+	"acquire": {
+		"exec": "subscript/system/repository.uc",
+		"args": ["get"]
+	}
+}
