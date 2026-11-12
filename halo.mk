@@ -8,7 +8,16 @@
 # (USE_SOURCE_DIR в командной строке подменил бы исходники и всем зависимостям)
 
 PKG_VERSION:=$(if $(FW_MAJOR),$(FW_MAJOR).$(FW_MINOR),0.1)
-PKG_RELEASE:=$(if $(FW_MAJOR),$(call calc_pkg_release,$(CURDIR),OSS),1)
+# номер выпуска: в сборке прошивки — calc_pkg_release; сборка из рабочей копии (HALO_SRC) —
+# время сборки UTC (ГГММДДччмм), иначе opkg считает новую сборку той же версией и
+# opkg upgrade (и обновления в halo-mod-software) её не видят; HALO_RELEASE — задать явно
+# (один на всю сборку: router.sh ipk ставит его сам); сборка коммита вне прошивки — 1
+ifneq ($(HALO_SRC),)
+  ifeq ($(HALO_RELEASE),)
+    HALO_RELEASE:=$(shell date -u +%y%m%d%H%M)
+  endif
+endif
+PKG_RELEASE:=$(if $(FW_MAJOR),$(call calc_pkg_release,$(CURDIR),OSS),$(or $(HALO_RELEASE),1))
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git@github.com:artnavsegda/donyx.git
