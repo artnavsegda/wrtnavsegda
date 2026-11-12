@@ -1,8 +1,11 @@
 include $(TOPDIR)/rules.mk
 -include ../fw-version.mk
 
-# Схема-модуль Halo «software»: установка, обновление и удаление пакетов (как Software в LuCI):
-# схема /system/software ("$module"), сборка модуля и CGI его API (/script/software/…, ucode).
+# Схема-модуль Halo «software» (как Software в LuCI): обновления установленных пакетов из фидов
+# (с подтверждением списка), установка из фидов по имени с поиском, репозитории (через схему
+# /system/repository пакета opkg-repository, если он стоит; иначе — только списки и opkg
+# update), загрузка своих ipk, удаление; схема /system/software ("$module"), сборка модуля и
+# CGI его API (/script/software/…, ucode).
 PKG_NAME:=halo-mod-software
 
 include ../halo.mk
@@ -14,7 +17,8 @@ $(call Halo/ModuleDefault)
 endef
 
 define Package/$(PKG_NAME)/description
-	Halo page System / Software: installed packages, upload, install, update and remove
+	Halo page System / Software: updates, install from repositories with search,
+	repositories, upload of own packages, installed packages and removal
 endef
 
 define Build/Compile
