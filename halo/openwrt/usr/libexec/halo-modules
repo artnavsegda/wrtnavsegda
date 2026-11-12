@@ -70,6 +70,12 @@ if [ -d "$D" ]; then
 	} > "$tmp" && gzip -9 -n -c "$tmp" > "$tmp.gz" && mv -f "$tmp.gz" "$D/manifest.js"
 fi
 
+# --- служба метрик (halo-metrics или halo-metrics-collectd): перечитать сборщики модулей
+# (/usr/share/halo/metrics.d) — у варианта на collectd это и пересборка его конфига
+if [ -z "$R" ] && [ -x /etc/init.d/halo-metrics ] && /etc/init.d/halo-metrics enabled; then
+	/etc/init.d/halo-metrics reload >/dev/null 2>&1
+fi
+
 # --- Halo рядом с aurora
 if [ -d "$AURORA/halo" ] && [ -d "$AURORA/script" ]; then
 	# CGI модулей: новые — ссылками, удалённых модулей — убрать
