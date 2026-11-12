@@ -66,8 +66,16 @@ function record(name, f, dir) {
 	let list = `${dir}/${name}`;
 	let st = fs.stat(list);
 	if (st) {
+		// opkg хранит список как скачал: у src/gz — сжатым (gzip)
+		let text;
+		if (fs.readfile(list, 2) == '\x1f\x8b') {
+			let p = fs.popen(`gzip -dc '${list}'`);
+			text = p?.read('all');
+			p?.close();
+		} else
+			text = fs.readfile(list);
 		let n = 0;
-		for (let l in split(fs.readfile(list) ?? '', '\n'))
+		for (let l in split(text ?? '', '\n'))
 			if (substr(l, 0, 9) == 'Package: ') n++;
 		r.packages = n;
 		let t = localtime(st.mtime);

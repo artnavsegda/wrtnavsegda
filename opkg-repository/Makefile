@@ -8,7 +8,7 @@ include $(TOPDIR)/rules.mk
 # Исходный код — в этом каталоге (files/).
 PKG_NAME:=opkg-repository
 PKG_VERSION:=0.1
-PKG_RELEASE:=1
+PKG_RELEASE:=2
 PKG_MAINTAINER:=iRZ Electronics <irz.net>
 PKG_LICENSE:=MIT
 
