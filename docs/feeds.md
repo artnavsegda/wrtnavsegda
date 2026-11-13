@@ -79,42 +79,50 @@ make package/feeds/irz/lighttpd/compile
 
 **Индекс и подпись делает SDK.** При `CONFIG_SIGNED_PACKAGES=y` `make package/index` пишет
 `Packages`, `Packages.gz` и `Packages.sig` во все фиды `bin/packages/<арх>/`, подписывая ключом
-`key-build` из корня SDK. Один раз — положить туда ключ фида (раздел 3а), дальше после сборки:
+`key-build` из корня SDK. SDK при первой сборке создаёт свой ключ — его роутеры не знают; один раз
+заменить его ключом фида (раздел 3а), сохранив прежний:
 
 ```sh
-cd <SDK> && make package/index
+cd <SDK>
+mv key-build key-build.sdk-orig && mv key-build.pub key-build.pub.sdk-orig
+install -m 600 ~/.config/opkg-feed/key-build key-build
+install -m 644 ~/.config/opkg-feed/key-build.pub key-build.pub
+make package/index        # дальше — после каждой сборки
 ```
 
-(`scripts/router.sh ipk` donyx делает это сам.) Перед сборкой прежние ipk пакета удалить из
-каталога фида — иначе в индексе обе версии (`router.sh` удаляет).
+(`scripts/router.sh ipk` donyx вызывает `make package/index` сам.) Перед сборкой прежние ipk
+пакета удалить из каталога фида — иначе в индексе обе версии (`router.sh` удаляет).
 
-**nginx** — один `alias` на каталог архитектуры (`/etc/nginx/sites-available/default` или свой
-блок, затем `sudo nginx -t && sudo systemctl reload nginx`):
-
-```nginx
-location /opkg/ {
-    alias /home/art/sdk24-r50/openwrt-sdk-24.10.2-ipq40xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64/bin/packages/arm_cortex-a7_neon-vfpv4/;
-    location ~ /Packages(\.gz|\.sig)?$ { add_header Cache-Control "no-store"; }
-}
-```
-
-Фиды — `http://<машина сборки>/opkg/<фид>`. Домашний каталог закрыт (700): nginx (`www-data`)
-нужно право прохода (`x`, без чтения списка) по каждому каталогу пути — ACL, один раз:
+**nginx — без sudo и без правки конфига.** Каталог `/var/www/html/opkg` принадлежит
+пользователю сборки (раздел 4), а nginx по умолчанию ходит по символическим ссылкам — достаточно
+ссылки на каталог архитектуры:
 
 ```sh
 S=/home/art/sdk24-r50/openwrt-sdk-24.10.2-ipq40xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64
-sudo setfacl -m u:www-data:x /home/art /home/art/sdk24-r50 $S $S/bin $S/bin/packages
+ln -sfn $S/bin/packages/arm_cortex-a7_neon-vfpv4 /var/www/html/opkg/sdk
 ```
 
-Каталоги и файлы в `bin/packages/<арх>` SDK создаёт читаемыми для всех.
+Фиды — `http://<машина сборки>/opkg/sdk/<фид>`. Домашний каталог закрыт (700): nginx
+(`www-data`) нужно право прохода (`x`, без чтения списка файлов) по каждому каталогу пути. Это
+ACL, его ставит сам владелец каталогов (sudo не нужен), один раз:
+
+```sh
+setfacl -m u:www-data:x /home/art /home/art/sdk24-r50 $S $S/bin $S/bin/packages
+```
+
+Каталоги и файлы в `bin/packages/<арх>` SDK создаёт читаемыми для всех. Другая архитектура (SDK
+R2) — своя ссылка (`/var/www/html/opkg/sdk-mipsel`) и ACL на путь её SDK. Вместо ссылки можно
+`alias` в конфиге nginx (`location /opkg/sdk/ { alias $S/bin/packages/<арх>/; }`) — тогда нужен
+sudo для конфига.
 
 **Роутер** — строка на каждый нужный фид в `/etc/opkg/customfeeds.conf` и открытый ключ в
 `/etc/opkg/keys` (раздел 5):
 
 ```
-src/gz sdk_halo     http://192.168.105.82/opkg/halo
-src/gz sdk_irz      http://192.168.105.82/opkg/irz
-src/gz sdk_packages http://192.168.105.82/opkg/packages
+src/gz sdk_halo     http://192.168.105.82/opkg/sdk/halo
+src/gz sdk_irz      http://192.168.105.82/opkg/sdk/irz
+src/gz sdk_packages http://192.168.105.82/opkg/sdk/packages
+src/gz sdk_base     http://192.168.105.82/opkg/sdk/base
 ```
 
 Так любой пакет, собранный в SDK (`make package/feeds/<фид>/<пакет>/compile`), ставится на
