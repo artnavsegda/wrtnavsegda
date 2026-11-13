@@ -2,27 +2,50 @@
 # Makefile после rules.mk и fw-version.mk, до package.mk.
 #
 # Исходник — один репозиторий и один коммит (donyx, ветка main — прод-протокол horizont):
-# модули собираются под общий рантайм (Svelte и @halo/ui) именно этой сборки Halo. Новый
-# коммит — меняется здесь, у всех пакетов сразу.
+# модули собираются под общий рантайм (Svelte и @halo/ui) именно этой сборки Halo.
+# Какой коммит:
+#   HALO_COMMIT=<хеш> make …   — этот;
+#   сборка прошивки (FW_MAJOR) — закреплённый HALO_PINNED (воспроизводимость; новый — здесь);
+#   иначе                      — последний коммит ветки HALO_BRANCH (main) на сервере
+#                                (git ls-remote при каждом разборе Makefile). Хеш входит в имя
+#                                архива в dl/: новый коммит — SDK сам скачивает новый архив
+#                                (с PKG_SOURCE_VERSION:=main архив в dl/ не обновлялся бы);
+#                                нет доступа к серверу — HALO_PINNED с предупреждением.
 # Отладка: собрать из рабочей копии вместо коммита — HALO_SRC=<каталог donyx> make …
 # (USE_SOURCE_DIR в командной строке подменил бы исходники и всем зависимостям)
 
+PKG_SOURCE_PROTO:=git
+PKG_SOURCE_URL:=git@github.com:artnavsegda/donyx.git
+HALO_PINNED:=41fbcfe9130d56245448e8abc5c49ce1f5da294e
+HALO_BRANCH?=main
+ifeq ($(HALO_COMMIT),)
+  ifneq ($(FW_MAJOR)$(HALO_SRC),)
+    HALO_COMMIT:=$(HALO_PINNED)
+  else
+    HALO_COMMIT:=$(shell git ls-remote $(PKG_SOURCE_URL) refs/heads/$(HALO_BRANCH) 2>/dev/null | cut -f1)
+    ifeq ($(HALO_COMMIT),)
+      $(warning halo.mk: no access to $(PKG_SOURCE_URL) ($(HALO_BRANCH)), using the pinned commit $(HALO_PINNED))
+      HALO_COMMIT:=$(HALO_PINNED)
+    else
+      HALO_LATEST:=1
+    endif
+  endif
+endif
+
 PKG_VERSION:=$(if $(FW_MAJOR),$(FW_MAJOR).$(FW_MINOR),0.1)
-# номер выпуска: в сборке прошивки — calc_pkg_release; сборка из рабочей копии (HALO_SRC) —
-# время сборки UTC (ГГММДДччмм), иначе opkg считает новую сборку той же версией и
-# opkg upgrade (и обновления в halo-mod-software) её не видят; HALO_RELEASE — задать явно
-# (один на всю сборку: router.sh ipk ставит его сам); сборка коммита вне прошивки — 1
-ifneq ($(HALO_SRC),)
+# номер выпуска: в сборке прошивки — calc_pkg_release; из рабочей копии (HALO_SRC) или из
+# последнего коммита ветки — время сборки UTC (ГГММДДччмм), иначе opkg считает новую сборку
+# той же версией и opkg upgrade (и обновления в halo-mod-software) её не видят; HALO_RELEASE —
+# задать явно (один на всю сборку: router.sh ipk ставит его сам); иначе — 1
+ifneq ($(HALO_SRC)$(HALO_LATEST),)
   ifeq ($(HALO_RELEASE),)
     HALO_RELEASE:=$(shell date -u +%y%m%d%H%M)
   endif
 endif
 PKG_RELEASE:=$(if $(FW_MAJOR),$(call calc_pkg_release,$(CURDIR),OSS),$(or $(HALO_RELEASE),1))
 
-PKG_SOURCE_PROTO:=git
-PKG_SOURCE_URL:=git@github.com:artnavsegda/donyx.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=41fbcfe9130d56245448e8abc5c49ce1f5da294e
+PKG_SOURCE_VERSION:=$(HALO_COMMIT)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_MIRROR_HASH:=skip
 

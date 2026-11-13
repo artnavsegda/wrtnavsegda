@@ -50,18 +50,80 @@ make package/feeds/irz/lighttpd/compile
 
 ## 2. Сборка пакетов Halo
 
-Исходник Halo — репозиторий donyx. Два способа:
+Исходник Halo — репозиторий donyx. Какой код попадает в пакет (`halo.mk`):
 
-- **из коммита** (выпуск): `PKG_SOURCE_VERSION` в `halo.mk` — коммит donyx, один на все пакеты
-  Halo; после коммита в donyx — поднять его здесь. `make package/feeds/halo/<пакет>/compile`.
-- **из рабочей копии** (разработка): `HALO_SRC=<каталог donyx> make …`; так собирает
+- **последний коммит ветки** (по умолчанию): `git ls-remote` ветки `HALO_BRANCH` (`main`) при
+  разборе Makefile — нужен доступ машины сборки к GitHub по ssh. Хеш входит в имя архива в
+  `dl/`, поэтому новый коммит SDK скачивает сам (с `PKG_SOURCE_VERSION:=main` архив в `dl/` не
+  обновлялся бы). Нет доступа — закреплённый `HALO_PINNED` с предупреждением;
+- **закреплённый коммит** `HALO_PINNED` — в сборке прошивки (`FW_MAJOR`), для воспроизводимости;
+- **явный коммит** — `HALO_COMMIT=<хеш> make …`, другая ветка — `HALO_BRANCH=<ветка>`;
+- **рабочая копия** (разработка, незакоммиченное): `HALO_SRC=<каталог donyx> make …`; так собирает
   `scripts/router.sh ipk` donyx (сначала rsync рабочей копии и каталогов пакетов на машину сборки).
+
+Обновить пакеты из последних исходников — `scripts/build-feed` этого репозитория, на машине
+сборки (git pull клона, feeds update, удаление прежних ipk, сборка всех вместе, подписанные
+индексы):
+
+```sh
+~/Coding/wrtnavsegda/scripts/build-feed ~/sdk24-r50/openwrt-sdk-…            # halo, все модули, opkg-repository
+~/Coding/wrtnavsegda/scripts/build-feed ~/sdk24-r50/openwrt-sdk-… halo-mod-software
+```
+
+Типовой цикл — правка Halo или модуля → пакеты на роутере:
+
+1. закоммитить и запушить donyx (и wrtnavsegda, если менялись Makefile): собирается то, что
+   лежит в `main` на GitHub;
+2. на машине сборки:
+
+   ```sh
+   ssh wrt-debian
+   ~/Coding/wrtnavsegda/scripts/build-feed ~/sdk24-r50/openwrt-sdk-24.10.2-ipq40xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64
+   ```
+
+   или одной командой с рабочей машины —
+   `ssh wrt-debian '~/Coding/wrtnavsegda/scripts/build-feed ~/sdk24-r50/openwrt-sdk-24.10.2-ipq40xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64 halo-mod-software'`;
+3. на роутере — `opkg update && opkg upgrade` (или «Update lists» и «Upgrade» на странице
+   Software в Halo).
+
+Вывод запуска (два пакета, около 1,5 мин; предупреждения `Config-build.in … defaults for
+choice values not supported` — штатные для SDK, не ошибка):
+
+```
+build-feed: halo-mod-dash-clock opkg-repository
+…
+build-feed: built in /home/art/sdk24-r50/openwrt-sdk-…/bin/packages/arm_cortex-a7_neon-vfpv4/halo:
+halo-mod-dash-clock_0.1-r2611130926_all.ipk
+opkg-repository_0.1-r3_all.ipk
+```
+
+Номер выпуска (`r2611130926`) — время сборки, поэтому `opkg upgrade` на роутере видит новую
+сборку; у пакетов со своим `PKG_RELEASE` (`opkg-repository`) — их номер: новую версию даёт его
+подъём в Makefile. `no ipk (see the build log)` в конце — пакет не собрался: запустить для него
+ещё раз и смотреть вывод `make` выше. Без доступа к GitHub Halo собирается из закреплённого
+коммита `HALO_PINNED` (предупреждение в выводе). Свой коммит или ветка —
+`HALO_COMMIT=<хеш> scripts/build-feed <SDK> …`, `HALO_BRANCH=<ветка> scripts/build-feed <SDK> …`.
+
+То же руками:
+
+```sh
+cd ~/Coding/wrtnavsegda && git pull     # Makefile пакетов (если менялись)
+cd <SDK>
+./scripts/feeds update halo            # только при новых пакетах в фиде
+A=bin/packages/arm_cortex-a7_neon-vfpv4/halo
+rm -f $A/halo_*_all.ipk $A/halo-preview_*_all.ipk $A/halo-mod-*_all.ipk
+make package/feeds/halo/halo/{clean,compile} package/feeds/halo/halo-mod-software/{clean,compile} …
+make package/index                      # индексы с подписью — роутеры видят сразу
+```
+
+Halo и модули собирать вместе, одной командой: модули собираются под рантайм своей сборки Halo.
 
 Версии:
 
 - `PKG_RELEASE`: в сборке прошивки — `calc_pkg_release`; из рабочей копии — время сборки UTC
   (`ГГММДДччмм`, переменная `HALO_RELEASE`, `router.sh` ставит её одну на все пакеты сборки),
-  иначе каждая сборка была бы `0.1-r1` и `opkg upgrade` новую не видел; из коммита вне прошивки — `1`.
+  иначе каждая сборка была бы `0.1-r1` и `opkg upgrade` новую не видел; так же — из последнего
+  коммита ветки; из явного коммита вне прошивки — `1`.
 - `HALO_SVELTE` — версия Svelte (проверяется при сборке). `halo` и `halo-preview` дают
   `halo-svelte-<версия>` и `halo-runtime-<HALO_RUNTIME>`, модули зависят от обоих.
   `HALO_RUNTIME` поднимать, когда модуль, собранный под новый рантайм, не заработает на прежнем

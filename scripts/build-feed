@@ -1,0 +1,63 @@
+#!/bin/sh
+# Собрать пакеты фида halo в SDK из последних исходников и обновить фиды ipk (docs/feeds.md):
+#
+#   scripts/build-feed <SDK> [пакет…]
+#
+#   <SDK>   — каталог SDK OpenWrt, в feeds.conf которого этот репозиторий — src-link halo;
+#   пакеты  — по умолчанию все halo, halo-mod-*, halo-metrics* и opkg-repository этого фида.
+#
+# Halo — из последнего коммита ветки main donyx (halo.mk; HALO_COMMIT=<хеш>, HALO_BRANCH=<ветка>
+# — другой), номер выпуска — время сборки, один на все пакеты. Шаги: git pull этого клона (если
+# в нём нет локальных изменений), feeds update/install, прежние ipk пакетов — прочь (в индексе
+# одна версия), clean + compile всех вместе (модули — под рантайм своей сборки Halo),
+# make package/index (подписанные индексы всех фидов). Запускать на машине сборки.
+set -e
+
+die() { echo "build-feed: $*" >&2; exit 1; }
+
+[ -n "$1" ] || die "usage: $0 <SDK> [package…]"
+SDK=$(cd "$1" && pwd) || die "no SDK directory $1"
+shift
+[ -x "$SDK/scripts/feeds" ] || die "$SDK is not an OpenWrt SDK"
+FEED=$(cd "$(dirname "$0")/.." && pwd)
+
+# пакеты по умолчанию — каталоги этого фида с Makefile
+if [ $# -eq 0 ]; then
+	set -- $(cd "$FEED" && for d in halo halo-mod-* halo-metrics* opkg-repository; do
+		[ -f "$d/Makefile" ] && echo "$d"; done)
+fi
+echo "build-feed: $*"
+
+# этот клон — свежий, если в нём нет своих правок (иначе собираем как есть)
+if [ -d "$FEED/.git" ]; then
+	if [ -z "$(git -C "$FEED" status --porcelain)" ]; then
+		git -C "$FEED" pull --ff-only -q || echo "build-feed: git pull failed, building the current files" >&2
+	else
+		echo "build-feed: $FEED has local changes, no git pull" >&2
+	fi
+fi
+
+cd "$SDK"
+./scripts/feeds update halo >/dev/null
+./scripts/feeds install -p halo "$@" >/dev/null
+
+ARCH=$(ls bin/packages 2>/dev/null | head -1)
+[ -n "$ARCH" ] || ARCH=$(sed -n 's/^CONFIG_TARGET_ARCH_PACKAGES="\(.*\)"/\1/p' .config)
+OUT=bin/packages/$ARCH/halo
+
+targets=""
+for p in "$@"; do
+	targets="$targets package/feeds/halo/$p/clean package/feeds/halo/$p/compile"
+	rm -f "$OUT/${p}_"*.ipk
+	[ "$p" = halo ] && rm -f "$OUT/halo-preview_"*.ipk
+done
+
+export HALO_RELEASE="${HALO_RELEASE:-$(date -u +%y%m%d%H%M)}"
+# shellcheck disable=SC2086
+make $targets -j"$(nproc)"
+make package/index >/dev/null
+
+echo "build-feed: built in $SDK/$OUT:"
+for p in "$@"; do
+	ls "$OUT" | grep -E "^${p}(-preview)?_" || echo "  $p: no ipk (see the build log)"
+done
