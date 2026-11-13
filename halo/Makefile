@@ -20,7 +20,7 @@ define Package/$(PKG_NAME)/Default
 	CATEGORY:=irzOS
 	PKGARCH:=all
 	# рантайм модулей: Svelte этой версии и @halo/ui в <корень Halo>/runtime/
-	PROVIDES:=halo-svelte-$(HALO_SVELTE)
+	PROVIDES:=halo-svelte-$(HALO_SVELTE) halo-runtime-$(HALO_RUNTIME)
 endef
 
 define Package/$(PKG_NAME)

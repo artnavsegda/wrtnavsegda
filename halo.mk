@@ -22,7 +22,7 @@ PKG_RELEASE:=$(if $(FW_MAJOR),$(call calc_pkg_release,$(CURDIR),OSS),$(or $(HALO
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git@github.com:artnavsegda/donyx.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=efeb64116da38eeb10fa2ca292dccd9822f79c2e
+PKG_SOURCE_VERSION:=41fbcfe9130d56245448e8abc5c49ce1f5da294e
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_MIRROR_HASH:=skip
 
@@ -36,6 +36,11 @@ PKG_MAINTAINER:=iRZ Electronics <irz.net>
 # сборке). halo и halo-preview дают виртуальный пакет halo-svelte-<версия> (PROVIDES), модуль
 # зависит от него (EXTRA_DEPENDS) — ставится на любой из двух вариантов Halo
 HALO_SVELTE:=5.57.3
+# версия рантайма Halo для модулей: halo и halo-preview дают halo-runtime-<N>, модуль зависит от
+# него. Поднимать, когда модуль, собранный под новый рантайм, не заработает на прежнем Halo:
+# новая общая библиотека (LIB_ENTRIES в runtime.shared.ts donyx), несовместимое изменение
+# @halo/ui. 2 — общий @tanstack/svelte-table в рантайме (runtime/tanstack-svelte-table.js)
+HALO_RUNTIME:=2
 
 # зависимости node: общие (Svelte, Vite) и, если у модуля свой package.json, — его библиотеки
 define Halo/Npm
@@ -61,7 +66,7 @@ define Halo/ModuleDefault
 	SECTION:=custom
 	CATEGORY:=irzOS
 	PKGARCH:=all
-	EXTRA_DEPENDS:=halo-svelte-$(HALO_SVELTE)
+	EXTRA_DEPENDS:=halo-svelte-$(HALO_SVELTE), halo-runtime-$(HALO_RUNTIME)
 endef
 
 # манифест модулей и (в варианте рядом с aurora) ссылки на CGI модулей — после установки и

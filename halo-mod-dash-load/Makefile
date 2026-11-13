@@ -16,7 +16,7 @@ include $(INCLUDE_DIR)/package.mk
 define Package/$(PKG_NAME)
 $(call Halo/ModuleDefault)
 	TITLE:=Halo dashboard module: load chart
-	EXTRA_DEPENDS:=halo-svelte-$(HALO_SVELTE), halo-metrics-backend
+	EXTRA_DEPENDS:=halo-svelte-$(HALO_SVELTE), halo-runtime-$(HALO_RUNTIME), halo-metrics-backend
 endef
 
 define Package/$(PKG_NAME)/description

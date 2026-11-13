@@ -1,0 +1,26 @@
+#!/bin/sh
+# Публикация фида halo из SDK R50 (описание — docs/feeds.md; на машине сборки — ~/bin/opkg-publish).
+# Публикация фида halo из SDK R50 для opkg роутеров: пакеты и индекс — в /var/www/html/opkg/halo
+# (nginx: http://<этот хост>/opkg/halo), индекс подписан ключом ~/.config/opkg-feed/key-build
+# (открытый ключ — /etc/opkg/keys/<отпечаток> на роутере). Запуск — после сборки пакетов:
+#   opkg-publish            — пакеты фида halo
+set -e
+SDK=${SDK:-/home/art/sdk24-r50/openwrt-sdk-24.10.2-ipq40xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64}
+SRC=${SRC:-$SDK/bin/packages/arm_cortex-a7_neon-vfpv4/halo}
+DST=${DST:-/var/www/html/opkg/halo}
+KEY=${KEY:-$HOME/.config/opkg-feed/key-build}
+# пакеты других фидов SDK, нужные пакетам halo, которых нет в фидах прошивки: модули lighttpd
+# iRZ 1.4.85 (feeds/irz/net/lighttpd — копия clean/packages; плагин грузится только той же
+# версией lighttpd, что в прошивке)
+EXTRA="${EXTRA:-irz/lighttpd-mod-proxy_*.ipk}"
+BIN=$SDK/staging_dir/host/bin
+export PATH="$BIN:$PATH" MKHASH="$BIN/mkhash"
+[ -w "$(dirname $DST)" ] || { echo "no write access to $(dirname $DST)" >&2; exit 1; }
+mkdir -p "$DST.new"
+cp -p "$SRC"/*.ipk "$DST.new/"
+for f in $EXTRA; do cp -p $SDK/bin/packages/arm_cortex-a7_neon-vfpv4/$f "$DST.new/"; done
+# индекс заново — по тому, что публикуется (в SDK он может отставать от .ipk)
+(cd "$DST.new" && "$SDK/scripts/ipkg-make-index.sh" . 2>/dev/null > Packages && gzip -9nc Packages > Packages.gz)
+usign -S -m "$DST.new/Packages" -s "$KEY"
+rm -rf "$DST.old"; [ -d "$DST" ] && mv "$DST" "$DST.old"; mv "$DST.new" "$DST"; rm -rf "$DST.old"
+echo "published $(grep -c "^Package:" "$DST/Packages") packages to $DST"
