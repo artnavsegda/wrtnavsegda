@@ -71,13 +71,72 @@ make package/feeds/irz/lighttpd/compile
 Перед сборкой прежние ipk этих пакетов удалить из `bin/packages/<арх>/halo/` (`router.sh` делает
 это сам): иначе в фид попадут обе версии.
 
-## 3. Фид ipk: публикация
+## 3. Фиды ipk прямо из каталога сборки (основной способ)
+
+Каждый фид SDK — уже готовый фид ipk: `bin/packages/<арх>/<фид>/` (`halo`, `irz`, `base`,
+`packages`, `routing`, …). Нужны только индекс с подписью и HTTP-сервер, который смотрит в этот
+каталог, — без копирования.
+
+**Индекс и подпись делает SDK.** При `CONFIG_SIGNED_PACKAGES=y` `make package/index` пишет
+`Packages`, `Packages.gz` и `Packages.sig` во все фиды `bin/packages/<арх>/`, подписывая ключом
+`key-build` из корня SDK. Один раз — положить туда ключ фида (раздел 3а), дальше после сборки:
+
+```sh
+cd <SDK> && make package/index
+```
+
+(`scripts/router.sh ipk` donyx делает это сам.) Перед сборкой прежние ipk пакета удалить из
+каталога фида — иначе в индексе обе версии (`router.sh` удаляет).
+
+**nginx** — один `alias` на каталог архитектуры (`/etc/nginx/sites-available/default` или свой
+блок, затем `sudo nginx -t && sudo systemctl reload nginx`):
+
+```nginx
+location /opkg/ {
+    alias /home/art/sdk24-r50/openwrt-sdk-24.10.2-ipq40xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64/bin/packages/arm_cortex-a7_neon-vfpv4/;
+    location ~ /Packages(\.gz|\.sig)?$ { add_header Cache-Control "no-store"; }
+}
+```
+
+Фиды — `http://<машина сборки>/opkg/<фид>`. Домашний каталог закрыт (700): nginx (`www-data`)
+нужно право прохода (`x`, без чтения списка) по каждому каталогу пути — ACL, один раз:
+
+```sh
+S=/home/art/sdk24-r50/openwrt-sdk-24.10.2-ipq40xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64
+sudo setfacl -m u:www-data:x /home/art /home/art/sdk24-r50 $S $S/bin $S/bin/packages
+```
+
+Каталоги и файлы в `bin/packages/<арх>` SDK создаёт читаемыми для всех.
+
+**Роутер** — строка на каждый нужный фид в `/etc/opkg/customfeeds.conf` и открытый ключ в
+`/etc/opkg/keys` (раздел 5):
+
+```
+src/gz sdk_halo     http://192.168.105.82/opkg/halo
+src/gz sdk_irz      http://192.168.105.82/opkg/irz
+src/gz sdk_packages http://192.168.105.82/opkg/packages
+```
+
+Так любой пакет, собранный в SDK (`make package/feeds/<фид>/<пакет>/compile`), ставится на
+роутер `opkg update && opkg install <пакет>`. Минусы: фид не подменяется целиком (во время
+сборки индекс может не совпасть с файлами — для стенда разработки неважно); пакеты фидов
+OpenWrt, собранные в SDK, на роутере предлагаются и как обновления пакетов прошивки — их, как и
+фид `wrt_pkg`, ставить обдуманно.
+
+## 3а. Ключ подписи
+
+Тот же ключ подписывает и фиды каталога сборки (положить `key-build` и `key-build.pub` в корень SDK), и
+фид-копию ниже.
+
+## 3б. Фид-копия: публикация (запасной способ)
+
+Отдельный фид с отбором пакетов и подменой целиком — копия в каталог HTTP-сервера.
 
 Индекс фида строит `scripts/ipkg-make-index.sh` SDK, подпись — `usign` (ключ Ed25519; `opkg` на
 роутере проверяет подпись индекса, `option check_signature` в `/etc/opkg.conf`), в индексе —
 SHA-256 каждого пакета.
 
-Ключ — один раз, на машине сборки (секретный ключ не уходит с неё):
+Создать ключ — один раз, на машине сборки (секретный ключ не уходит с неё):
 
 ```sh
 S=~/sdk24-r50/openwrt-sdk-…/staging_dir/host/bin
