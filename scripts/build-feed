@@ -65,17 +65,24 @@ ARCH=$(ls bin/packages 2>/dev/null | head -1)
 [ -n "$ARCH" ] || ARCH=$(sed -n 's/^CONFIG_TARGET_ARCH_PACKAGES="\(.*\)"/\1/p' .config)
 OUT=bin/packages/$ARCH/halo
 
-targets=""
+cleans=""
+compiles=""
 for p in "$@"; do
-	targets="$targets package/feeds/halo/$p/clean package/feeds/halo/$p/compile"
+	cleans="$cleans package/feeds/halo/$p/clean"
+	compiles="$compiles package/feeds/halo/$p/compile"
 done
 
 # метка начала: что собрано в этот запуск — файлы новее неё
 mkdir -p "$OUT"
 STAMP=$(mktemp)
 export HALO_RELEASE="${HALO_RELEASE:-$(date -u +%y%m%d%H%M)}"
+# clean — отдельным make и до сборки: цели одной командной строки make -j выполняет вперемешку,
+# clean пакета выполнялся и после его же compile и удалял только что собранный ipk; -k — ошибка одного
+# пакета не останавливает сборку остальных (прежние ipk clean уже удалил)
 # shellcheck disable=SC2086
-make $targets -j"$(nproc)"
+make $cleans >/dev/null
+# shellcheck disable=SC2086
+make -k $compiles -j"$(nproc)" || failed=1
 
 # в фиде — одна версия каждого пакета: из одного каталога собирается и несколько пакетов
 # (halo + halo-preview, horizon-uc + zenith-uc), поэтому прежние ipk удаляются по имени пакета
@@ -96,3 +103,4 @@ for f in $built; do echo "  $(basename "$f")"; done
 for p in "$@"; do
 	echo "$built" | grep -q "/${p}[_-]" || echo "build-feed: $p: no new ipk (see the build log)" >&2
 done
+[ -z "$failed" ] || die "some packages failed to build (rerun one with V=s: make package/feeds/halo/<pkg>/compile V=s)"

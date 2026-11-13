@@ -65,8 +65,7 @@ make package/feeds/irz/lighttpd/compile
 пакетов — актуальные из `scripts/feed-packages`: Halo и модули, halo-metrics, opkg-repository,
 horizon-uc, aurora-uc; новый пакет фида — дописать туда; в аргументах — имена пакетов или
 каталогов: `halo-preview`, `zenith-uc`, `halo-metrics-collectd` собирают свой каталог), на машине
-сборки (git pull клона, feeds update, удаление прежних ipk, сборка всех вместе, подписанные
-индексы):
+сборки (git pull клона, feeds update, clean, сборка всех вместе, подписанные индексы):
 
 ```sh
 ~/Coding/wrtnavsegda/scripts/build-feed ~/sdk24-r50/openwrt-sdk-…            # всё из scripts/feed-packages
@@ -104,7 +103,9 @@ build-feed: built in /home/art/sdk24-r50/openwrt-sdk-…/bin/packages/arm_cortex
 Номер выпуска (`r2611130926`) — время сборки, поэтому `opkg upgrade` на роутере видит новую
 сборку; у пакетов со своим `PKG_RELEASE` (`opkg-repository`) — их номер: новую версию даёт его
 подъём в Makefile. `<пакет>: no new ipk (see the build log)` — пакет не собрался: запустить для
-него ещё раз и смотреть вывод `make` выше. Прежние версии собранных пакетов из фида удаляются
+него ещё раз и смотреть вывод `make` выше (сборка остальных при этом идёт до конца, `make -k`,
+а скрипт завершается ошибкой; подробный вывод одного пакета —
+`make package/feeds/halo/<каталог>/compile V=s` в SDK). Прежние версии собранных пакетов из фида удаляются
 (по имени пакета, так что и `halo-preview`, `zenith-uc`, `halo-metrics-collectd`). Без доступа к GitHub Halo собирается из закреплённого
 коммита `HALO_PINNED` (предупреждение в выводе). Свой коммит или ветка —
 `HALO_COMMIT=<хеш> scripts/build-feed <SDK> …`, `HALO_BRANCH=<ветка> scripts/build-feed <SDK> …`.
@@ -117,11 +118,16 @@ cd <SDK>
 ./scripts/feeds update halo            # только при новых пакетах в фиде
 A=bin/packages/arm_cortex-a7_neon-vfpv4/halo
 rm -f $A/halo_*_all.ipk $A/halo-preview_*_all.ipk $A/halo-mod-*_all.ipk
-make package/feeds/halo/halo/{clean,compile} package/feeds/halo/halo-mod-software/{clean,compile} …
+make package/feeds/halo/halo/clean package/feeds/halo/halo-mod-software/clean …
+make -j$(nproc) package/feeds/halo/halo/compile package/feeds/halo/halo-mod-software/compile …
 make package/index                      # индексы с подписью — роутеры видят сразу
 ```
 
 Halo и модули собирать вместе, одной командой: модули собираются под рантайм своей сборки Halo.
+`clean` — отдельной командой и до `compile`: цели одной командной строки `make -j` выполняет
+вперемешку, и `clean` пакета может выполниться после его же `compile` и удалить только что
+собранный ipk (так
+13.11 из фида пропали halo, модули и opkg-repository).
 
 Версии:
 
