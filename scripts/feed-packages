@@ -1,0 +1,23 @@
+# Актуальные пакеты фида — то, что scripts/build-feed собирает без списка в аргументах.
+# Каталог пакета на строку (из каталога может собираться несколько пакетов); # — комментарий.
+# Новый пакет фида — дописать сюда. Старые опыты (hello, cmhello, libhello, jcli, jerryscript,
+# linenoise-ng, replxx, stdin2arg, wjelement, zcore, zcore2) не собираются.
+
+# Halo и его модули (donyx)
+halo
+halo-mod-console
+halo-mod-dash-clock
+halo-mod-dash-gauge
+halo-mod-dash-gps
+halo-mod-dash-hbar
+halo-mod-dash-load
+halo-mod-firmware
+halo-mod-software
+halo-metrics            # halo-metrics, halo-metrics-collectd
+
+# схема репозиториев opkg (прод-horizont)
+opkg-repository
+
+# horizon-uc: бэкенд и CLI на ucode, Аврора под его протокол (CONFLICTS horizont, zenith, aurora)
+horizon-uc              # horizon-uc, zenith-uc
+aurora-uc

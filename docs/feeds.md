@@ -61,13 +61,17 @@ make package/feeds/irz/lighttpd/compile
 - **рабочая копия** (разработка, незакоммиченное): `HALO_SRC=<каталог donyx> make …`; так собирает
   `scripts/router.sh ipk` donyx (сначала rsync рабочей копии и каталогов пакетов на машину сборки).
 
-Обновить пакеты из последних исходников — `scripts/build-feed` этого репозитория, на машине
+Обновить пакеты из последних исходников — `scripts/build-feed` этого репозитория (без списка
+пакетов — актуальные из `scripts/feed-packages`: Halo и модули, halo-metrics, opkg-repository,
+horizon-uc, aurora-uc; новый пакет фида — дописать туда; в аргументах — имена пакетов или
+каталогов: `halo-preview`, `zenith-uc`, `halo-metrics-collectd` собирают свой каталог), на машине
 сборки (git pull клона, feeds update, удаление прежних ipk, сборка всех вместе, подписанные
 индексы):
 
 ```sh
-~/Coding/wrtnavsegda/scripts/build-feed ~/sdk24-r50/openwrt-sdk-…            # halo, все модули, opkg-repository
+~/Coding/wrtnavsegda/scripts/build-feed ~/sdk24-r50/openwrt-sdk-…            # всё из scripts/feed-packages
 ~/Coding/wrtnavsegda/scripts/build-feed ~/sdk24-r50/openwrt-sdk-… halo-mod-software
+~/Coding/wrtnavsegda/scripts/build-feed ~/sdk24-r50/openwrt-sdk-… halo-preview   # = каталог halo: halo и halo-preview
 ```
 
 Типовой цикл — правка Halo или модуля → пакеты на роутере:
@@ -93,14 +97,15 @@ choice values not supported` — штатные для SDK, не ошибка):
 build-feed: halo-mod-dash-clock opkg-repository
 …
 build-feed: built in /home/art/sdk24-r50/openwrt-sdk-…/bin/packages/arm_cortex-a7_neon-vfpv4/halo:
-halo-mod-dash-clock_0.1-r2611130926_all.ipk
-opkg-repository_0.1-r3_all.ipk
+  halo-mod-dash-clock_0.1-r2611130926_all.ipk
+  opkg-repository_0.1-r3_all.ipk
 ```
 
 Номер выпуска (`r2611130926`) — время сборки, поэтому `opkg upgrade` на роутере видит новую
 сборку; у пакетов со своим `PKG_RELEASE` (`opkg-repository`) — их номер: новую версию даёт его
-подъём в Makefile. `no ipk (see the build log)` в конце — пакет не собрался: запустить для него
-ещё раз и смотреть вывод `make` выше. Без доступа к GitHub Halo собирается из закреплённого
+подъём в Makefile. `<пакет>: no new ipk (see the build log)` — пакет не собрался: запустить для
+него ещё раз и смотреть вывод `make` выше. Прежние версии собранных пакетов из фида удаляются
+(по имени пакета, так что и `halo-preview`, `zenith-uc`, `halo-metrics-collectd`). Без доступа к GitHub Halo собирается из закреплённого
 коммита `HALO_PINNED` (предупреждение в выводе). Свой коммит или ветка —
 `HALO_COMMIT=<хеш> scripts/build-feed <SDK> …`, `HALO_BRANCH=<ветка> scripts/build-feed <SDK> …`.
 

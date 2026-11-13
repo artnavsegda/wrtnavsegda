@@ -4,7 +4,10 @@
 #   scripts/build-feed <SDK> [пакет…]
 #
 #   <SDK>   — каталог SDK OpenWrt, в feeds.conf которого этот репозиторий — src-link halo;
-#   пакеты  — по умолчанию все halo, halo-mod-*, halo-metrics* и opkg-repository этого фида.
+#   пакеты  — имена пакетов или каталогов фида (halo-preview, zenith-uc, halo-metrics-collectd —
+#             по индексу фида SDK собирается их каталог: halo, horizon-uc, halo-metrics);
+#             по умолчанию — список scripts/feed-packages (актуальные: Halo и модули,
+#             halo-metrics, opkg-repository, horizon-uc, aurora-uc).
 #
 # Halo — из последнего коммита ветки main donyx (halo.mk; HALO_COMMIT=<хеш>, HALO_BRANCH=<ветка>
 # — другой), номер выпуска — время сборки, один на все пакеты. Шаги: git pull этого клона (если
@@ -21,13 +24,10 @@ shift
 [ -x "$SDK/scripts/feeds" ] || die "$SDK is not an OpenWrt SDK"
 FEED=$(cd "$(dirname "$0")/.." && pwd)
 
-# пакеты по умолчанию — каталоги этого фида с Makefile
+# пакеты по умолчанию — scripts/feed-packages (без комментариев и пустых строк)
 if [ $# -eq 0 ]; then
-	set -- $(cd "$FEED" && for d in halo halo-mod-* halo-metrics* opkg-repository; do
-		[ -f "$d/Makefile" ] && echo "$d"; done)
+	set -- $(sed -e 's/#.*//' "$FEED/scripts/feed-packages" | tr -s ' \t' '\n' | grep -v '^$')
 fi
-echo "build-feed: $*"
-
 # этот клон — свежий, если в нём нет своих правок (иначе собираем как есть)
 if [ -d "$FEED/.git" ]; then
 	if [ -z "$(git -C "$FEED" status --porcelain)" ]; then
@@ -39,6 +39,26 @@ fi
 
 cd "$SDK"
 ./scripts/feeds update halo >/dev/null
+
+# имя пакета -> каталог фида: каталог как есть, иначе — по индексу фида SDK (feeds/halo.index:
+# Source-Makefile каталога, затем его Package:); из одного каталога может быть несколько пакетов
+dir_of() {
+	if [ -f "$FEED/$1/Makefile" ]; then echo "$1"; return; fi
+	awk -v want="$1" '
+		/^Source-Makefile:/ { n = split($2, a, "/"); dir = a[n - 1] }
+		/^Package:/ && $2 == want { print dir; exit }
+	' feeds/halo.index
+}
+dirs=""
+for p in "$@"; do
+	d=$(dir_of "$p")
+	[ -n "$d" ] || die "no package $p in the feed $FEED"
+	case " $dirs " in *" $d "*) ;; *) dirs="$dirs $d" ;; esac
+done
+# shellcheck disable=SC2086
+set -- $dirs
+echo "build-feed: $*"
+
 ./scripts/feeds install -p halo "$@" >/dev/null
 
 ARCH=$(ls bin/packages 2>/dev/null | head -1)
@@ -48,16 +68,31 @@ OUT=bin/packages/$ARCH/halo
 targets=""
 for p in "$@"; do
 	targets="$targets package/feeds/halo/$p/clean package/feeds/halo/$p/compile"
-	rm -f "$OUT/${p}_"*.ipk
-	[ "$p" = halo ] && rm -f "$OUT/halo-preview_"*.ipk
 done
 
+# метка начала: что собрано в этот запуск — файлы новее неё
+mkdir -p "$OUT"
+STAMP=$(mktemp)
 export HALO_RELEASE="${HALO_RELEASE:-$(date -u +%y%m%d%H%M)}"
 # shellcheck disable=SC2086
 make $targets -j"$(nproc)"
+
+# в фиде — одна версия каждого пакета: из одного каталога собирается и несколько пакетов
+# (halo + halo-preview, horizon-uc + zenith-uc), поэтому прежние ipk удаляются по имени пакета
+# собранного файла, а не по имени каталога
+built=$(find "$OUT" -maxdepth 1 -name '*.ipk' -newer "$STAMP" | sort)
+rm -f "$STAMP"
+for f in $built; do
+	name=$(basename "$f" | sed 's/_.*//')
+	for old in "$OUT/${name}_"*.ipk; do
+		[ "$old" = "$f" ] || rm -f "$old"
+	done
+done
 make package/index >/dev/null
 
 echo "build-feed: built in $SDK/$OUT:"
+[ -n "$built" ] || die "nothing built (see the build log)"
+for f in $built; do echo "  $(basename "$f")"; done
 for p in "$@"; do
-	ls "$OUT" | grep -E "^${p}(-preview)?_" || echo "  $p: no ipk (see the build log)"
+	echo "$built" | grep -q "/${p}[_-]" || echo "build-feed: $p: no new ipk (see the build log)" >&2
 done
