@@ -71,6 +71,7 @@ horizon-uc, aurora-uc; новый пакет фида — дописать ту�
 ~/Coding/wrtnavsegda/scripts/build-feed ~/sdk24-r50/openwrt-sdk-…            # всё из scripts/feed-packages
 ~/Coding/wrtnavsegda/scripts/build-feed ~/sdk24-r50/openwrt-sdk-… halo-mod-software
 ~/Coding/wrtnavsegda/scripts/build-feed ~/sdk24-r50/openwrt-sdk-… halo-preview   # = каталог halo: halo и halo-preview
+~/Coding/wrtnavsegda/scripts/build-feed -v ~/sdk24-r50/openwrt-sdk-… halo-mod-software  # весь вывод make
 ```
 
 Типовой цикл — правка Halo или модуля → пакеты на роутере:
@@ -89,26 +90,33 @@ horizon-uc, aurora-uc; новый пакет фида — дописать ту�
 3. на роутере — `opkg update && opkg upgrade` (или «Update lists» и «Upgrade» на странице
    Software в Halo).
 
-Вывод запуска (два пакета, около 1,5 мин; предупреждения `Config-build.in … defaults for
-choice values not supported` — штатные для SDK, не ошибка):
+Вывод — только ход сборки: какой пакет собирается, что собралось, что нет. Полный вывод `make`
+(предупреждения конфигурации SDK, сборка зависимостей) — в `<SDK>/logs/build-feed.log`, журнал
+каждого пакета — `<SDK>/logs/package/feeds/halo/<каталог>/compile.txt`; `-v` — весь вывод
+(`V=s`) в терминал (`build-feed -v <SDK> halo-mod-software` — разобраться с одним пакетом):
 
 ```
-build-feed: halo-mod-dash-clock opkg-repository
-…
-build-feed: built in /home/art/sdk24-r50/openwrt-sdk-…/bin/packages/arm_cortex-a7_neon-vfpv4/halo:
-  halo-mod-dash-clock_0.1-r2611130926_all.ipk
+build-feed: feed: 30717ba wtf
+build-feed: packages: halo-mod-dash-clock opkg-repository
+build-feed: Halo: donyx a667062e (main), release r2611131204
+build-feed: clean, compile (full output: /home/art/sdk24-r50/openwrt-sdk-…/logs/build-feed.log)
+  building halo-mod-dash-clock
+  building opkg-repository
+build-feed: built in 1m32s, /home/art/sdk24-r50/openwrt-sdk-…/bin/packages/arm_cortex-a7_neon-vfpv4/halo:
+  halo-mod-dash-clock_0.1-r2611131204_all.ipk
   opkg-repository_0.1-r3_all.ipk
+build-feed: indexes signed, all packages built
 ```
 
-Номер выпуска (`r2611130926`) — время сборки, поэтому `opkg upgrade` на роутере видит новую
-сборку; у пакетов со своим `PKG_RELEASE` (`opkg-repository`) — их номер: новую версию даёт его
-подъём в Makefile. `<пакет>: no new ipk (see the build log)` — пакет не собрался: запустить для
-него ещё раз и смотреть вывод `make` выше (сборка остальных при этом идёт до конца, `make -k`,
-а скрипт завершается ошибкой; подробный вывод одного пакета —
-`make package/feeds/halo/<каталог>/compile V=s` в SDK). Прежние версии собранных пакетов из фида удаляются
-(по имени пакета, так что и `halo-preview`, `zenith-uc`, `halo-metrics-collectd`). Без доступа к GitHub Halo собирается из закреплённого
-коммита `HALO_PINNED` (предупреждение в выводе). Свой коммит или ветка —
-`HALO_COMMIT=<хеш> scripts/build-feed <SDK> …`, `HALO_BRANCH=<ветка> scripts/build-feed <SDK> …`.
+Не собрался пакет — `FAILED <каталог>` по ходу, в конце — 15 последних строк его журнала и
+ошибка скрипта (остальные пакеты собираются до конца, `make -k`). Номер выпуска
+(`r2611131204`) — время сборки, поэтому `opkg upgrade` на роутере видит новую сборку; у пакетов
+со своим `PKG_RELEASE` (`opkg-repository`) — их номер: новую версию даёт его подъём в Makefile.
+Коммит donyx скрипт узнаёт один раз и передаёт всем пакетам (`HALO_COMMIT`): коммит, запушенный
+посреди сборки, не попадёт только в часть модулей. Прежние версии собранных пакетов из фида
+удаляются (по имени пакета, так что и `halo-preview`, `zenith-uc`, `halo-metrics-collectd`). Без
+доступа к GitHub Halo собирается из закреплённого коммита `HALO_PINNED`. Свой коммит или
+ветка — `HALO_COMMIT=<хеш> scripts/build-feed <SDK> …`, `HALO_BRANCH=<ветка> scripts/build-feed <SDK> …`.
 
 То же руками:
 

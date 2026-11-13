@@ -1,8 +1,11 @@
 #!/bin/sh
 # Собрать пакеты фида halo в SDK из последних исходников и обновить фиды ipk (docs/feeds.md):
 #
-#   scripts/build-feed <SDK> [пакет…]
+#   scripts/build-feed [-v] <SDK> [пакет…]
 #
+#   -v      — весь вывод make (V=s) в терминал; без него — только ход сборки (какой пакет
+#             собирается, что собралось, что нет), полный вывод — в <SDK>/logs/build-feed.log,
+#             журнал каждого пакета — <SDK>/logs/package/feeds/halo/<каталог>/compile.txt;
 #   <SDK>   — каталог SDK OpenWrt, в feeds.conf которого этот репозиторий — src-link halo;
 #   пакеты  — имена пакетов или каталогов фида (halo-preview, zenith-uc, halo-metrics-collectd —
 #             по индексу фида SDK собирается их каталог: halo, horizon-uc, halo-metrics);
@@ -17,8 +20,11 @@
 set -e
 
 die() { echo "build-feed: $*" >&2; exit 1; }
+say() { echo "build-feed: $*"; }
 
-[ -n "$1" ] || die "usage: $0 <SDK> [package…]"
+VERBOSE=
+[ "$1" != "-v" ] || { VERBOSE=1; shift; }
+[ -n "$1" ] || die "usage: $0 [-v] <SDK> [package…]"
 SDK=$(cd "$1" && pwd) || die "no SDK directory $1"
 shift
 [ -x "$SDK/scripts/feeds" ] || die "$SDK is not an OpenWrt SDK"
@@ -35,6 +41,7 @@ if [ -d "$FEED/.git" ]; then
 	else
 		echo "build-feed: $FEED has local changes, no git pull" >&2
 	fi
+	say "feed: $(git -C "$FEED" log -1 --format='%h %s')"
 fi
 
 cd "$SDK"
@@ -57,7 +64,7 @@ for p in "$@"; do
 done
 # shellcheck disable=SC2086
 set -- $dirs
-echo "build-feed: $*"
+say "packages: $*"
 
 ./scripts/feeds install -p halo "$@" >/dev/null
 
@@ -73,16 +80,51 @@ for p in "$@"; do
 done
 
 # метка начала: что собрано в этот запуск — файлы новее неё
-mkdir -p "$OUT"
+mkdir -p "$OUT" logs
 STAMP=$(mktemp)
+START=$(date +%s)
 export HALO_RELEASE="${HALO_RELEASE:-$(date -u +%y%m%d%H%M)}"
+# Halo и модули — из одного коммита donyx: его узнаём один раз здесь, а не halo.mk в каждом
+# пакете (запушенный посреди сборки коммит иначе попал бы только в часть модулей)
+if [ -z "$HALO_COMMIT" ]; then
+	url=$(sed -n 's/^PKG_SOURCE_URL:=//p' "$FEED/halo.mk")
+	HALO_COMMIT=$(git ls-remote "$url" "refs/heads/${HALO_BRANCH:-main}" 2>/dev/null | cut -f1)
+	[ -z "$HALO_COMMIT" ] || export HALO_COMMIT HALO_LATEST=1
+fi
+if [ -n "$HALO_COMMIT" ]; then
+	say "Halo: donyx $(echo "$HALO_COMMIT" | cut -c1-8) (${HALO_BRANCH:-main}), release r$HALO_RELEASE"
+else
+	say "Halo: no access to GitHub, the pinned commit of halo.mk, release r$HALO_RELEASE"
+fi
+
+LOG=logs/build-feed.log
 # clean — отдельным make и до сборки: цели одной командной строки make -j выполняет вперемешку,
-# clean пакета выполнялся и после его же compile и удалял только что собранный ipk; -k — ошибка одного
-# пакета не останавливает сборку остальных (прежние ipk clean уже удалил)
-# shellcheck disable=SC2086
-make $cleans >/dev/null
-# shellcheck disable=SC2086
-make -k $compiles -j"$(nproc)" || failed=1
+# clean пакета выполнялся и после его же compile и удалял только что собранный ipk; -k — ошибка
+# одного пакета не останавливает сборку остальных (прежние ipk clean уже удалил)
+if [ -n "$VERBOSE" ]; then
+	# shellcheck disable=SC2086
+	make $cleans V=s
+	# shellcheck disable=SC2086
+	make -k $compiles -j"$(nproc)" V=s || failed=1
+else
+	say "clean, compile (full output: $SDK/$LOG)"
+	# shellcheck disable=SC2086
+	make $cleans >"$LOG" 2>&1
+	# ход сборки — из вывода make: «make[N] -C <каталог пакета> compile» и «ERROR: … failed»
+	# (собственные зависимости SDK, предупреждения конфигурации и т. п. — только в журнале)
+	# shellcheck disable=SC2086
+	make -k $compiles -j"$(nproc)" BUILD_LOG=1 >>"$LOG" 2>&1 &
+	pid=$!
+	tail -n 0 -f --pid=$pid "$LOG" 2>/dev/null | tr '\r' '\n' | awk -v dirs=" $* " '
+		/ make\[[0-9]+\] -C .* compile$/ {
+			n = split($(NF - 1), a, "/"); d = a[n]
+			if (index(dirs, " " d " ") && !seen[d]++) { print "  building " d; fflush() }
+		}
+		/^ERROR: package\/.* failed to build/ {
+			n = split($2, a, "/"); print "  FAILED   " a[n]; fflush()
+		}'
+	wait $pid || failed=1
+fi
 
 # в фиде — одна версия каждого пакета: из одного каталога собирается и несколько пакетов
 # (halo + halo-preview, horizon-uc + zenith-uc), поэтому прежние ipk удаляются по имени пакета
@@ -95,12 +137,26 @@ for f in $built; do
 		[ "$old" = "$f" ] || rm -f "$old"
 	done
 done
-make package/index >/dev/null
+make package/index >/dev/null 2>&1 || die "make package/index failed"
 
-echo "build-feed: built in $SDK/$OUT:"
-[ -n "$built" ] || die "nothing built (see the build log)"
+T=$(( $(date +%s) - START ))
+say "built in $(( T / 60 ))m$(( T % 60 ))s, $SDK/$OUT:"
 for f in $built; do echo "  $(basename "$f")"; done
+bad=""
 for p in "$@"; do
-	echo "$built" | grep -q "/${p}[_-]" || echo "build-feed: $p: no new ipk (see the build log)" >&2
+	echo "$built" | grep -q "/${p}_" || bad="$bad $p"
 done
-[ -z "$failed" ] || die "some packages failed to build (rerun one with V=s: make package/feeds/halo/<pkg>/compile V=s)"
+[ -n "$bad$failed" ] || { say "indexes signed, all packages built"; exit 0; }
+[ -n "$bad" ] || die "make reported errors, but every package has a new ipk: see $SDK/$LOG"
+for p in $bad; do
+	l=logs/package/feeds/halo/$p/compile.txt
+	echo
+	if [ -f "$l" ] && [ -z "$VERBOSE" ]; then
+		say "$p: not built, end of $SDK/$l:"
+		tail -n 15 "$l" | sed 's/^/  | /'
+	else
+		say "$p: not built"
+	fi
+done
+echo
+die "not built:$bad (one package in full: $0 -v $SDK <package>)"
