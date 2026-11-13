@@ -2,10 +2,13 @@ include $(TOPDIR)/rules.mk
 -include ../fw-version.mk
 
 # Схема-модуль Halo «firmware»: обновление встроенного ПО — каталог сборок (прототип внешнего
-# API: манифест buildbot через lighttpd mod_proxy /halo-firmware/buildbot/, его и образ
-# скачивает браузер), сверка с последней сборкой канала и обновление до неё, ручная загрузка
-# образа, ссылка на сайт (по бренду сборки), действие upgrade /system/management. CGI
+# API: манифест и образы buildbot через CGI /script/firmware/buildbot/, его и образ скачивает
+# браузер), сверка с последней сборкой канала и обновление до неё, ручная загрузка образа,
+# ссылка на сайт (по бренду сборки), действие upgrade /system/management. CGI
 # /script/firmware/info — плата, бренд и версия. Схема /system/firmware ("$module").
+# Каталог — не через lighttpd mod_proxy (как было): он разрешает имя buildbot при запуске
+# lighttpd, при загрузке роутера DNS ещё нет, init.d/lighttpd не проходил проверку конфига и
+# веб не поднимался.
 PKG_NAME:=halo-mod-firmware
 
 include ../halo.mk
@@ -21,7 +24,6 @@ FIRMWARE_BRAND:=$(if $(filter 1,$(DONYX)),dnxOS,irzOS)
 define Package/$(PKG_NAME)
 $(call Halo/ModuleDefault)
 	TITLE:=Halo module: firmware upgrade
-	DEPENDS+=+lighttpd-mod-proxy
 endef
 
 define Package/$(PKG_NAME)/description
@@ -39,28 +41,19 @@ define Package/$(PKG_NAME)/install
 	sed -e 's|@FIRMWARE_URL@|$(FIRMWARE_URL)|' -e 's|@BRAND@|$(FIRMWARE_BRAND)|' \
 		$(PKG_BUILD_DIR)/modules/firmware/schema/system/firmware.json \
 		> $(1)/usr/share/horizont/schema/system/firmware.json
-	$(INSTALL_DIR) $(1)/usr/share/halo/script/firmware $(1)/usr/share/halo/lighttpd
+	$(INSTALL_DIR) $(1)/usr/share/halo/script/firmware
 	$(INSTALL_BIN) $(PKG_BUILD_DIR)/modules/firmware/backend/script/firmware/* $(1)/usr/share/halo/script/firmware/
-	$(INSTALL_DATA) $(PKG_BUILD_DIR)/modules/firmware/backend/lighttpd/50-halo-firmware.conf $(1)/usr/share/halo/lighttpd/
 endef
 
-# прокси каталога — в конфиг lighttpd, только если есть mod_proxy: без модуля lighttpd с этим
-# конфигом не запускается и пропадает весь веб (так было на R50). Без прокси модуль работает,
-# каталог buildbot — нет (ручная загрузка образа остаётся)
-define Firmware/ProxyConf
-[ -n "$${IPKG_INSTROOT}" ] || {
-	if [ -f /usr/lib/lighttpd/mod_proxy.so ]; then
-		ln -sf /usr/share/halo/lighttpd/50-halo-firmware.conf /etc/lighttpd/halo.d/50-halo-firmware.conf
-	else
-		rm -f /etc/lighttpd/halo.d/50-halo-firmware.conf
-		echo "halo-mod-firmware: no lighttpd mod_proxy, the firmware catalog is disabled" >&2
-	fi
-}
+# конфиг прокси прежних версий пакета (ссылка в halo.d) — прочь: из-за него lighttpd не
+# запускался при загрузке
+define Firmware/OldProxyConf
+[ -n "$${IPKG_INSTROOT}" ] || rm -f /etc/lighttpd/halo.d/50-halo-firmware.conf
 endef
 
 define Package/$(PKG_NAME)/postinst
 #!/bin/sh
-$(call Firmware/ProxyConf)
+$(call Firmware/OldProxyConf)
 $(call Halo/Modules)
 $(call Halo/ResetSchemas)
 $(call Halo/RestartWeb)
@@ -69,10 +62,8 @@ endef
 
 define Package/$(PKG_NAME)/postrm
 #!/bin/sh
-[ -n "$${IPKG_INSTROOT}" ] || rm -f /etc/lighttpd/halo.d/50-halo-firmware.conf
 $(call Halo/Modules)
 $(call Halo/ResetSchemas)
-$(call Halo/RestartWeb)
 exit 0
 endef
 
