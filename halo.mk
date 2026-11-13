@@ -39,8 +39,9 @@ HALO_SVELTE:=5.57.3
 # версия рантайма Halo для модулей: halo и halo-preview дают halo-runtime-<N>, модуль зависит от
 # него. Поднимать, когда модуль, собранный под новый рантайм, не заработает на прежнем Halo:
 # новая общая библиотека (LIB_ENTRIES в runtime.shared.ts donyx), несовместимое изменение
-# @halo/ui. 2 — общий @tanstack/svelte-table в рантайме (runtime/tanstack-svelte-table.js)
-HALO_RUNTIME:=2
+# @halo/ui. 2 — общий @tanstack/svelte-table в рантайме (runtime/tanstack-svelte-table.js);
+# 3 — и bits-ui (runtime/bits-ui.js)
+HALO_RUNTIME:=3
 
 # зависимости node: общие (Svelte, Vite) и, если у модуля свой package.json, — его библиотеки
 define Halo/Npm
