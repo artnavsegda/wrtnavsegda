@@ -8,7 +8,9 @@ include $(TOPDIR)/rules.mk
 # пересобирать не нужно. Сборка из рабочей копии: AURORA_SRC=<каталог aurora> make …;
 # иначе — закреплённый коммит ветки vue3.
 PKG_NAME:=aurora
-PKG_VERSION:=$(if $(FW_MAJOR),$(FW_MAJOR).$(FW_MINOR),0.1)
+# Вне сборки прошивки — версия выше продовой (0.1 dev / 1.2 release), чтобы opkg
+# апгрейдил установленный aurora (Vue 2, 0.1-r11) на этот (Vue 3), а не считал даунгрейдом
+PKG_VERSION:=$(if $(FW_MAJOR),$(FW_MAJOR).$(FW_MINOR),1.3)
 # номер выпуска: в сборке прошивки — calc_pkg_release; из рабочей копии (AURORA_SRC) —
 # время сборки UTC, иначе opkg не увидит пересобранный пакет как новый
 ifneq ($(AURORA_SRC),)
