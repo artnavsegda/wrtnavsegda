@@ -16,7 +16,7 @@
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git@github.com:artnavsegda/donyx.git
-HALO_PINNED:=41fbcfe9130d56245448e8abc5c49ce1f5da294e
+HALO_PINNED:=17e090b5743abd12178f85fd6ed17b48e0d2dac9
 HALO_BRANCH?=main
 ifeq ($(HALO_COMMIT),)
   ifneq ($(FW_MAJOR)$(HALO_SRC),)
