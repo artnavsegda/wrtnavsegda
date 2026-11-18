@@ -52,9 +52,9 @@ make package/feeds/irz/lighttpd/compile
 
 Исходник Halo — репозиторий donyx. Какой код попадает в пакет (`halo.mk`):
 
-- **последний коммит ветки** (по умолчанию): `git ls-remote` ветки `HALO_BRANCH` (`main`) при
+- **последний коммит ветки** (по умолчанию): `git ls-remote` ветки `HALO_BRANCH` (`skeleton`) при
   разборе Makefile — нужен доступ машины сборки к GitHub по ssh. Хеш входит в имя архива в
-  `dl/`, поэтому новый коммит SDK скачивает сам (с `PKG_SOURCE_VERSION:=main` архив в `dl/` не
+  `dl/`, поэтому новый коммит SDK скачивает сам (с `PKG_SOURCE_VERSION:=skeleton` архив в `dl/` не
   обновлялся бы). Нет доступа — закреплённый `HALO_PINNED` с предупреждением;
 - **закреплённый коммит** `HALO_PINNED` — в сборке прошивки (`FW_MAJOR`), для воспроизводимости;
 - **явный коммит** — `HALO_COMMIT=<хеш> make …`, другая ветка — `HALO_BRANCH=<ветка>`;
@@ -77,7 +77,7 @@ horizon-uc, aurora-uc; новый пакет фида — дописать ту�
 Типовой цикл — правка Halo или модуля → пакеты на роутере:
 
 1. закоммитить и запушить donyx (и wrtnavsegda, если менялись Makefile): собирается то, что
-   лежит в `main` на GitHub;
+   лежит в `skeleton` на GitHub;
 2. на машине сборки:
 
    ```sh
@@ -98,7 +98,7 @@ horizon-uc, aurora-uc; новый пакет фида — дописать ту�
 ```
 build-feed: feed: 30717ba wtf
 build-feed: packages: halo-mod-dash-clock opkg-repository
-build-feed: Halo: donyx a667062e (main), release r2611131204
+build-feed: Halo: donyx a667062e (skeleton), release r2611131204
 build-feed: clean, compile (full output: /home/art/sdk24-r50/openwrt-sdk-…/logs/build-feed.log)
   building halo-mod-dash-clock
   building opkg-repository
