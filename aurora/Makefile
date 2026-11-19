@@ -77,6 +77,16 @@ define Package/$(PKG_NAME)
 		+lighttpd-mod-setenv
 endef
 
+# файлы веб-сервера — conffiles: установка/обновление пакета не затирает
+# настройки текущей прошивки (их шаблон может быть новее этого каталога)
+define Package/$(PKG_NAME)/conffiles
+/etc/board.d/99-lighttpd
+/etc/init.d/lighttpd
+/etc/lighttpd/envs.sh
+/etc/lighttpd/template.conf
+/etc/ssl/https-tls.cnf
+endef
+
 define Package/$(PKG_NAME)/config
 	select PACKAGE_horizont
 endef
