@@ -3,6 +3,9 @@
 # Новый пакет фида — дописать сюда. Старые опыты (hello, cmhello, libhello, jcli, jerryscript,
 # linenoise-ng, replxx, stdin2arg, wjelement, zcore, zcore2) не собираются.
 
+# Aurora на Vue 3 (локальный апгрейд веб-интерфейса с прошивочного Vue 2)
+aurora
+
 # Halo и его модули (donyx)
 halo
 halo-mod-console

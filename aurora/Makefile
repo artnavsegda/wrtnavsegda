@@ -6,23 +6,49 @@ include $(TOPDIR)/rules.mk
 # webpack → Vite. Отличия от корпоративного: сборка — npm run build (dist/, уже с
 # gzip-in-place через postbuild), icons.js — в репозитории (с import Iconify),
 # пересобирать не нужно. Сборка из рабочей копии: AURORA_SRC=<каталог aurora> make …;
-# иначе — закреплённый коммит ветки vue3.
+# иначе — последний коммит ветки vue3 (AURORA_PINNED — для сборки прошивки и fallback).
 PKG_NAME:=aurora
 # Вне сборки прошивки — версия выше продовой (0.1 dev / 1.2 release), чтобы opkg
 # апгрейдил установленный aurora (Vue 2, 0.1-r11) на этот (Vue 3), а не считал даунгрейдом
 PKG_VERSION:=$(if $(FW_MAJOR),$(FW_MAJOR).$(FW_MINOR),1.3)
-# номер выпуска: в сборке прошивки — calc_pkg_release; из рабочей копии (AURORA_SRC) —
-# время сборки UTC, иначе opkg не увидит пересобранный пакет как новый
-ifneq ($(AURORA_SRC),)
-  PKG_RELEASE:=$(shell date -u +%y%m%d%H%M)
-else
-  PKG_RELEASE:=$(if $(FW_MAJOR),$(call calc_pkg_release,$(CURDIR),OSS),1)
+# номер выпуска: в сборке прошивки — calc_pkg_release; из рабочей копии (AURORA_SRC)
+# или из последнего коммита ветки — время сборки UTC, иначе opkg не увидит пересобранный
+# пакет как новый; из закреплённого коммита вне прошивки — 1
+ifneq ($(AURORA_SRC)$(AURORA_LATEST),)
+  ifeq ($(AURORA_RELEASE),)
+    AURORA_RELEASE:=$(shell date -u +%y%m%d%H%M)
+  endif
 endif
+PKG_RELEASE:=$(if $(FW_MAJOR),$(call calc_pkg_release,$(CURDIR),OSS),$(or $(AURORA_RELEASE),1))
 
+# Какой коммит:
+#   AURORA_COMMIT=<хеш> make …   — этот;
+#   сборка прошивки (FW_MAJOR)   — закреплённый AURORA_PINNED (воспроизводимость);
+#   иначе                        — последний коммит ветки AURORA_BRANCH (vue3) на сервере
+#                                  (git ls-remote при разборе Makefile). Нет доступа к
+#                                  серверу — AURORA_PINNED с предупреждением.
+# Локальный фид: каждая сборка из ветки получает номер выпуска по времени, поэтому
+# opkg видит новую сборку (PKG_VERSION 1.3 вышепродовой 0.1 — установленный Vue 2
+# обновляется, а не считается даунгрейдом).
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git@gitlab.radiofid.ru:Routers/Developing/zos/aurora.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_SOURCE_VERSION:=825d5ca557e7f0f8f3be73363c5391ea8d388149
+AURORA_PINNED:=0b714deaf14bd3d222e3ee64f858160ab732f1d3
+AURORA_BRANCH?=vue3
+ifeq ($(AURORA_COMMIT),)
+  ifneq ($(FW_MAJOR)$(AURORA_SRC),)
+    AURORA_COMMIT:=$(AURORA_PINNED)
+  else
+    AURORA_COMMIT:=$(shell git ls-remote $(PKG_SOURCE_URL) refs/heads/$(AURORA_BRANCH) 2>/dev/null | cut -f1)
+    ifeq ($(AURORA_COMMIT),)
+      $(warning aurora: no access to $(PKG_SOURCE_URL) ($(AURORA_BRANCH)), using the pinned commit $(AURORA_PINNED))
+      AURORA_COMMIT:=$(AURORA_PINNED)
+    else
+      AURORA_LATEST:=1
+    endif
+  endif
+endif
+PKG_SOURCE_VERSION:=$(AURORA_COMMIT)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
 PKG_MIRROR_HASH:=skip
 
