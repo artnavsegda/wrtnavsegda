@@ -12,7 +12,7 @@
 #             по умолчанию — список scripts/feed-packages (актуальные: Halo и модули,
 #             halo-metrics, opkg-repository, horizon-uc, aurora-uc).
 #
-# Halo — из последнего коммита ветки skeleton donyx (halo.mk; HALO_COMMIT=<хеш>, HALO_BRANCH=<ветка>
+# Halo — из последнего коммита ветки split donyx (halo.mk; HALO_COMMIT=<хеш>, HALO_BRANCH=<ветка>
 # — другой), номер выпуска — время сборки, один на все пакеты. Шаги: git pull этого клона (если
 # в нём нет локальных изменений), feeds update/install, прежние ipk пакетов — прочь (в индексе
 # одна версия), clean + compile всех вместе (модули — под рантайм своей сборки Halo),
@@ -88,11 +88,11 @@ export HALO_RELEASE="${HALO_RELEASE:-$(date -u +%y%m%d%H%M)}"
 # пакете (запушенный посреди сборки коммит иначе попал бы только в часть модулей)
 if [ -z "$HALO_COMMIT" ]; then
 	url=$(sed -n 's/^PKG_SOURCE_URL:=//p' "$FEED/halo.mk")
-	HALO_COMMIT=$(git ls-remote "$url" "refs/heads/${HALO_BRANCH:-skeleton}" 2>/dev/null | cut -f1)
+	HALO_COMMIT=$(git ls-remote "$url" "refs/heads/${HALO_BRANCH:-split}" 2>/dev/null | cut -f1)
 	[ -z "$HALO_COMMIT" ] || export HALO_COMMIT HALO_LATEST=1
 fi
 if [ -n "$HALO_COMMIT" ]; then
-	say "Halo: donyx $(echo "$HALO_COMMIT" | cut -c1-8) (${HALO_BRANCH:-skeleton}), release r$HALO_RELEASE"
+	say "Halo: donyx $(echo "$HALO_COMMIT" | cut -c1-8) (${HALO_BRANCH:-split}), release r$HALO_RELEASE"
 else
 	say "Halo: no access to GitHub, the pinned commit of halo.mk, release r$HALO_RELEASE"
 fi

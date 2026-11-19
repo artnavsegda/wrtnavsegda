@@ -1,23 +1,23 @@
 # Общее для пакетов Halo (halo, halo-preview) и его модулей (halo-mod-*): подключается в их
 # Makefile после rules.mk и fw-version.mk, до package.mk.
 #
-# Исходник — один репозиторий и один коммит (donyx, ветка skeleton — прод-протокол horizont):
+# Исходник — один репозиторий и один коммит (donyx, ветка split — прод-протокол horizont):
 # модули собираются под общий рантайм (Svelte и @halo/ui) именно этой сборки Halo.
 # Какой коммит:
 #   HALO_COMMIT=<хеш> make …   — этот;
 #   сборка прошивки (FW_MAJOR) — закреплённый HALO_PINNED (воспроизводимость; новый — здесь);
-#   иначе                      — последний коммит ветки HALO_BRANCH (skeleton) на сервере
+#   иначе                      — последний коммит ветки HALO_BRANCH (split) на сервере
 #                                (git ls-remote при каждом разборе Makefile). Хеш входит в имя
 #                                архива в dl/: новый коммит — SDK сам скачивает новый архив
-#                                (с PKG_SOURCE_VERSION:=skeleton архив в dl/ не обновлялся бы);
+#                                (с PKG_SOURCE_VERSION:=split архив в dl/ не обновлялся бы);
 #                                нет доступа к серверу — HALO_PINNED с предупреждением.
 # Отладка: собрать из рабочей копии вместо коммита — HALO_SRC=<каталог donyx> make …
 # (USE_SOURCE_DIR в командной строке подменил бы исходники и всем зависимостям)
 
 PKG_SOURCE_PROTO:=git
 PKG_SOURCE_URL:=git@github.com:artnavsegda/donyx.git
-HALO_PINNED:=17e090b5743abd12178f85fd6ed17b48e0d2dac9
-HALO_BRANCH?=skeleton
+HALO_PINNED:=12f3f2f316bddbc0b8da26e8704b1338b1b777a0
+HALO_BRANCH?=split
 ifeq ($(HALO_COMMIT),)
   ifneq ($(FW_MAJOR)$(HALO_SRC),)
     HALO_COMMIT:=$(HALO_PINNED)
