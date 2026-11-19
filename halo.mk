@@ -65,8 +65,9 @@ HALO_SVELTE:=5.57.3
 # @halo/ui. 2 — общий @tanstack/svelte-table в рантайме (runtime/tanstack-svelte-table.js);
 # 3 — и bits-ui (runtime/bits-ui.js); 4 — точки входа Svelte собраны в один
 # runtime/svelte.js; 5 — 4 отозван (derived/get выпали из-за неоднозначных export *),
-# svelte/internal/client и svelte/store снова отдельными файлами
-HALO_RUNTIME:=5
+# svelte/internal/client и svelte/store снова отдельными файлами; 6 — bits-ui и
+# @tanstack/svelte-table в одном libs.js, общий чанк один, css рантайма не ставится
+HALO_RUNTIME:=6
 
 # зависимости node: общие (Svelte, Vite) и, если у модуля свой package.json, — его библиотеки
 define Halo/Npm
