@@ -63,10 +63,10 @@ HALO_SVELTE:=5.57.3
 # него. Поднимать, когда модуль, собранный под новый рантайм, не заработает на прежнем Halo:
 # новая общая библиотека (LIB_ENTRIES в runtime.shared.ts donyx), несовместимое изменение
 # @halo/ui. 2 — общий @tanstack/svelte-table в рантайме (runtime/tanstack-svelte-table.js);
-# 3 — и bits-ui (runtime/bits-ui.js); 4 — все точки входа Svelte в одном файле
-# runtime/svelte.js вместо svelte.js, svelte/store.js, svelte/internal/* (меньше файлов
-# на флеше: каждый мелкий файл занимает блок 4 КБ)
-HALO_RUNTIME:=4
+# 3 — и bits-ui (runtime/bits-ui.js); 4 — точки входа Svelte собраны в один
+# runtime/svelte.js; 5 — 4 отозван (derived/get выпали из-за неоднозначных export *),
+# svelte/internal/client и svelte/store снова отдельными файлами
+HALO_RUNTIME:=5
 
 # зависимости node: общие (Svelte, Vite) и, если у модуля свой package.json, — его библиотеки
 define Halo/Npm
