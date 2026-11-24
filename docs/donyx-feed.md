@@ -42,7 +42,19 @@ scripts/build-feed-donyx
 
 Скрипт собирает `halo` (оба варианта), модули и `halo-metrics` с `DONYX=1`,
 `HALO_BRANCH=split`, общим номером выпуска, и публикует подписанный индекс в
-`/var/www/html/opkg/donyx`. Проверка:
+`/var/www/html/opkg/donyx`.
+
+Точечно — один пакет или каталог фида:
+
+```sh
+scripts/build-feed-donyx halo-mod-software
+scripts/build-feed-donyx halo                    # halo + halo-preview
+scripts/build-feed-donyx halo-mod-dash-webgl
+```
+
+`halo-preview` зависит от `aurora`, но саму Аврору в donyx-фид не кладём: на iRM
+должна остаться штатная. Иначе `opkg upgrade` предложил бы заменить её локальной
+Vue 3-сборкой. Проверка:
 
 ```sh
 curl -s http://192.168.245.248/opkg/donyx/Packages | grep -E '^(Package|Version|Architecture):' | head

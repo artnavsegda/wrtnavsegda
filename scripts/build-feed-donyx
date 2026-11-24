@@ -1,6 +1,11 @@
 #!/bin/sh
 # Собрать donyx-вариант Halo и модулей и опубликовать отдельный opkg-фид:
-#   scripts/build-feed-donyx
+#   scripts/build-feed-donyx [пакет…]
+#
+# Без аргументов — набор из scripts/feed-packages-donyx (Halo, модули, halo-metrics,
+# opkg-repository). С аргументами — точечно, например:
+#   scripts/build-feed-donyx halo-mod-software
+# Пакет `halo` собирает оба варианта, halo и halo-preview.
 #
 # Ветка donyx — только для сборок dnxOS: DONYX=1 переключает бренд Halo (оформление,
 # SSL-конфиг, ссылку на прошивки Donyx и точку GPS), а пакеты публикуются не в общий
@@ -14,8 +19,8 @@
 #       ~/sdk24-irm/openwrt-sdk-…/feeds.conf
 #   rm -f ~/sdk24-irm/openwrt-sdk-…/bin/packages/*/halo/*.ipk \
 #         ~/sdk24-irm/openwrt-sdk-…/bin/packages/*/halo/Packages*
-# Публикация — ~/bin/opkg-publish из scripts/opkg-publish (понимает DST/SRC/EXTRA);
-# build-feed вызывает её сам.
+# Публикация — ~/bin/opkg-publish из scripts/opkg-publish (понимает DST/SRC/EXTRA):
+# build-feed только собирает, публикуем в конце.
 set -eu
 
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -24,10 +29,6 @@ ARCH=${ARCH:-arm_cortex-a7_neon-vfpv4}
 
 [ -x "$SDK/scripts/feeds" ] || {
 	echo "build-feed-donyx: нет SDK $SDK (скопируйте sdk24-r50, см. шапку скрипта)" >&2
-	exit 1
-}
-[ -f "$HERE/feed-packages-donyx" ] || {
-	echo "build-feed-donyx: нет $HERE/feed-packages-donyx" >&2
 	exit 1
 }
 
@@ -40,6 +41,21 @@ export SRC=${SRC:-$SDK/bin/packages/$ARCH/halo}
 export DST=${DST:-/var/www/html/opkg/donyx}
 export EXTRA=${EXTRA:-}
 
-packages=$(sed -e 's/#.*//' "$HERE/feed-packages-donyx" | tr -s ' \t' '\n' | grep -v '^$')
+if [ $# -gt 0 ]; then
+	packages=$*
+else
+	[ -f "$HERE/feed-packages-donyx" ] || {
+		echo "build-feed-donyx: нет $HERE/feed-packages-donyx" >&2
+		exit 1
+	}
+	packages=$(sed -e 's/#.*//' "$HERE/feed-packages-donyx" | tr -s ' \t' '\n' | grep -v '^$')
+fi
+
 # shellcheck disable=SC2086
-exec "$HERE/build-feed" "$SDK" $packages
+"$HERE/build-feed" "$SDK" $packages
+
+# aurora собирается как зависимость halo-preview (DEPENDS +aurora). В donyx-фид её не
+# кладём: на iRM уже есть штатная Аврора, а лишняя 1.3 в фиде при opkg upgrade
+# заменила бы её. Если Авроры в прошивке нет — это отдельное решение, не для bolt-on.
+rm -f "$SRC"/aurora_*.ipk
+"$HOME/bin/opkg-publish"
