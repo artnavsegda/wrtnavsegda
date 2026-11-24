@@ -1,0 +1,45 @@
+#!/bin/sh
+# Собрать donyx-вариант Halo и модулей и опубликовать отдельный opkg-фид:
+#   scripts/build-feed-donyx
+#
+# Ветка donyx — только для сборок dnxOS: DONYX=1 переключает бренд Halo (оформление,
+# SSL-конфиг, ссылку на прошивки Donyx и точку GPS), а пакеты публикуются не в общий
+# /opkg/halo (irz), а в /opkg/donyx. Сборка идёт из последнего коммита ветки split
+# donyx (HALO_BRANCH, по умолчанию split; HALO_COMMIT=<хеш> — закрепить).
+#
+# Отдельный SDK (по умолчанию ~/sdk24-irm) нужен, чтобы сборка donyx не заменила
+# пакеты и индекс irz-фида в ~/sdk24-r50. Один раз:
+#   cp -a ~/sdk24-r50/openwrt-sdk-… ~/sdk24-irm/
+#   sed -i 's|src-link halo .*|src-link halo /home/art/Coding/wrtnavsegda-donyx|' \
+#       ~/sdk24-irm/openwrt-sdk-…/feeds.conf
+#   rm -f ~/sdk24-irm/openwrt-sdk-…/bin/packages/*/halo/*.ipk \
+#         ~/sdk24-irm/openwrt-sdk-…/bin/packages/*/halo/Packages*
+# Публикация — ~/bin/opkg-publish из scripts/opkg-publish (понимает DST/SRC/EXTRA);
+# build-feed вызывает её сам.
+set -eu
+
+HERE=$(cd "$(dirname "$0")" && pwd)
+SDK=${SDK:-$HOME/sdk24-irm/openwrt-sdk-24.10.2-ipq40xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64}
+ARCH=${ARCH:-arm_cortex-a7_neon-vfpv4}
+
+[ -x "$SDK/scripts/feeds" ] || {
+	echo "build-feed-donyx: нет SDK $SDK (скопируйте sdk24-r50, см. шапку скрипта)" >&2
+	exit 1
+}
+[ -f "$HERE/feed-packages-donyx" ] || {
+	echo "build-feed-donyx: нет $HERE/feed-packages-donyx" >&2
+	exit 1
+}
+
+# DONYX=1 — make-переменные halo.mk и пакетов Halo; HALO_BRANCH — исходник donyx.
+export DONYX=1
+export HALO_BRANCH=${HALO_BRANCH:-split}
+# Публикуем только в donyx-фид; arch-специфичный lighttpd-mod-proxy из irz-фида
+# не копируем — на Donyx iRM модуль должен быть из прошивки (aarch64, не R50).
+export SRC=${SRC:-$SDK/bin/packages/$ARCH/halo}
+export DST=${DST:-/var/www/html/opkg/donyx}
+export EXTRA=${EXTRA:-}
+
+packages=$(sed -e 's/#.*//' "$HERE/feed-packages-donyx" | tr -s ' \t' '\n' | grep -v '^$')
+# shellcheck disable=SC2086
+exec "$HERE/build-feed" "$SDK" $packages
