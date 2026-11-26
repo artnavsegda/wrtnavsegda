@@ -61,25 +61,3 @@ release = "24.10.2"
 sdk = "~/sdk24/openwrt-sdk-24.10.2-mediatek-filogic_gcc-13.3.0_musl.Linux-x86_64"
 feeds = "feeds/irm.conf"
 extras = []
-
-# Пока нет оборудования и SDK. Фид им уже подходит (пакеты all),
-# но в сборке они не участвуют.
-[platforms.wrs]
-status = "planned"
-board = "wrs"
-target = "ramips/mt7621"
-arch = "mipsel_24kc"
-release = "24.10.2"
-sdk = ""
-feeds = ""
-extras = []
-
-[platforms.x86]
-status = "planned"
-board = "x86"
-target = "x86/64"
-arch = "x86_64"
-release = "24.10.2"
-sdk = ""
-feeds = ""
-extras = []
