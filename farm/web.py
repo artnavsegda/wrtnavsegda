@@ -249,7 +249,7 @@ class App:
                 continue
             rows.append({"name": name, "version": "", "arch": "", "depends": "", "size": 0,
                          "status": "не в фиде", "build_version": "", "build_state": state_of(name),
-                         "dir": plan[name][1]})
+                         "dir": plan[name][1], "source": sources.get(name, {})})
         rows.sort(key=lambda r: (plan.get(r["name"], (999, ""))[0], r["name"]))
         return {"feed": flavor.feed, "packages": rows, "build": build,
                 "plan": {"total": len(farm.packages(flavor)), "running": running is not None,
