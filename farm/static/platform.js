@@ -37,10 +37,9 @@ async function load() {
 }
 
 function renderOps() {
-  const labels = { feeds_update: "feeds update", feeds_install: "feeds install", feeds_list: "feeds list", sdk_pull: "git pull SDK", image: "собрать образ" };
   $("#ops").innerHTML = data.ops
-    .map((op) => `<div class="oprow"><button data-op="${op.id}" ${op.ok ? "" : "disabled"}>${esc(labels[op.id] || op.title)}</button>
-      <span class="muted">${esc(op.title)}</span></div>`)
+    .map((op) => `<div class="oprow"><button data-op="${op.id}" ${op.ok ? "" : "disabled"}>${esc(op.title)}</button>
+      <span class="muted mono">${esc(op.cmd)}</span></div>`)
     .join("");
   $("#ops").querySelectorAll("[data-op]").forEach((b) => b.addEventListener("click", () => runOp(b.dataset.op)));
 }

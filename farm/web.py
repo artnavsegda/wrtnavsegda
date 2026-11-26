@@ -326,10 +326,14 @@ class App:
     # ---------- платформа ----------
 
     OPS = {
-        "feeds_update": ("feeds update -a", ["./scripts/feeds", "update", "-a"], False),
-        "feeds_install": ("feeds install -a", ["./scripts/feeds", "install", "-a"], False),
-        "feeds_list": ("feeds list", ["./scripts/feeds", "list"], True),
-        "sdk_pull": ("git pull в SDK", ["git", "pull", "--ff-only"], False),
+        "feeds_update": ("обновить фиды", "./scripts/feeds update -a",
+                         ["./scripts/feeds", "update", "-a"], False),
+        "feeds_install": ("установить все пакеты фидов", "./scripts/feeds install -a",
+                          ["./scripts/feeds", "install", "-a"], False),
+        "feeds_list": ("список пакетов фидов", "./scripts/feeds list",
+                       ["./scripts/feeds", "list"], True),
+        "sdk_pull": ("обновить SDK", "git pull --ff-only",
+                     ["git", "pull", "--ff-only"], False),
     }
 
     def payload_platform(self, name: str) -> dict:
@@ -340,12 +344,13 @@ class App:
         text = cfg.read_text(errors="replace") if cfg and cfg.exists() else ""
         local = farm.project / "platforms.local.toml"
         ops = []
-        for op, (title, cmd, sync) in self.OPS.items():
+        for op, (title, cmd, argv, sync) in self.OPS.items():
             ok = bool(sdk and sdk.exists())
             if op == "sdk_pull":
                 ok = ok and (sdk / ".git").exists()
-            ops.append({"id": op, "title": title, "sync": sync, "ok": ok})
-        ops.append({"id": "image", "title": "собрать образ прошивки", "sync": False,
+            ops.append({"id": op, "title": title, "cmd": cmd, "sync": sync, "ok": ok})
+        ops.append({"id": "image", "title": "собрать образ прошивки",
+                    "cmd": f"make -j{farm.jobs} в image_tree", "sync": False,
                     "ok": bool(p.image_tree and p.image_tree.exists())})
         return {
             "name": p.name,
@@ -510,7 +515,7 @@ class App:
                 return {"ok": False, "error": "нет SDK"}
             if op == "sdk_pull" and not (p.sdk / ".git").exists():
                 return {"ok": False, "error": "SDK не git-репозиторий"}
-            cmd = spec[1]
+            cmd = spec[2]
             cwd = p.sdk
 
         if op != "feeds_list":
@@ -525,7 +530,7 @@ class App:
         env["LC_ALL"] = "C"
 
         specs = self.OPS.get(op)
-        if specs and specs[2]:
+        if specs and specs[3]:
             proc = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, timeout=120)
             return {"ok": proc.returncode == 0, "output": (proc.stdout + proc.stderr)[-20000:]}
 
