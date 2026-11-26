@@ -223,7 +223,7 @@ class App:
 
         plan = _plan(farm, flavor)
         sources = source_map(farm, flavor)
-        running = _last_dir_index(farm, [dict(x) for x in state.recent_builds(conn, 5)])
+        stages = _progress(farm, dict(last), len(farm.packages(flavor))) if last else None
         done_all = last is not None and last["status"] == "ok"
 
         def state_of(name: str) -> str:
@@ -231,15 +231,14 @@ class App:
                 return ""
             if done_all:
                 return "built"
-            if running is None:
-                return "pending"
-            idx, _ = plan[name]
-            cur = running[0] - 1
-            if idx < cur:
+            if not stages:
+                return ""
+            d = plan[name][1]
+            if d in stages["done"]:
                 return "built"
-            if idx == cur:
+            if d == stages["current"]:
                 return "building"
-            return "pending"
+            return "pending" if stages["full"] else ""
 
         rows, seen = [], set()
         for p in sorted(feed, key=lambda x: (plan.get(x["name"], (999, ""))[0], x["name"])):
@@ -271,13 +270,15 @@ class App:
                              "dir": d, "source": sources.get(name, {})})
         rows.sort(key=lambda r: (plan.get(r["name"], (999, r.get("dir", "")))[0], r["name"]))
         current = None
-        if running:
-            last_lines = self.payload_pkg_log(last["id"] if last else 0, running[2], 1)["lines"]
-            current = {"dir": running[2], "last": last_lines[-1].strip() if last_lines else ""}
+        if stages and last:
+            cur_dir = stages["current"]
+            last_lines = self.payload_pkg_log(last["id"], cur_dir, 1)["lines"]
+            current = {"dir": cur_dir, "last": last_lines[-1].strip() if last_lines else ""}
         return {"feed": flavor.feed, "packages": rows, "build": build, "current": current,
                 "last_status": last["status"] if last else None,
-                "plan": {"total": len(farm.packages(flavor)), "running": running is not None,
-                         "current": running[0] if running else 0, "dir": running[2] if running else ""}}
+                "plan": {"total": len(farm.packages(flavor)), "running": stages is not None,
+                         "current": 0 if not stages else 1,
+                         "dir": stages["current"] if stages else ""}}
 
     def payload_pkg_log(self, build_id: int, pkg: str, lines: int = 80) -> dict:
         farm = config.load()
@@ -651,6 +652,35 @@ def _plan(farm, flavor) -> dict[str, tuple[int, str]]:
         for n in names:
             plan[n] = (i, d)
     return plan
+
+
+def _progress(farm, build: dict, total_dirs: int) -> dict | None:
+    """Что собрано и что собирается — по строкам [i/n] из build.log."""
+    path = farm.builds_dir / str(build["id"]) / "build.log"
+    if not path.exists():
+        return None
+    try:
+        lines = path.read_text(errors="replace").splitlines()[-500:]
+    except OSError:
+        return None
+    dirs: list[str] = []
+    total = 0
+    for line in lines:
+        m = re.match(r"\[(\d+)/(\d+)\] (\S+)", line)
+        if m:
+            dirs.append(m.group(3))
+            total = int(m.group(2))
+        m2 = re.search(r"пакетов к сборке: (\d+)", line)
+        if m2:
+            total = int(m2.group(1))
+    if not dirs:
+        return None
+    return {
+        "done": set(dirs[:-1]),
+        "current": dirs[-1],
+        "total": total,
+        "full": total == total_dirs,
+    }
 
 
 def _last_dir_index(farm, builds) -> tuple[int, int, str] | None:

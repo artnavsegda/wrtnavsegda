@@ -6,6 +6,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from types import SimpleNamespace
+
 from farm import config, web
 
 
@@ -27,6 +29,35 @@ class FeedIndexTest(unittest.TestCase):
 
     def test_missing(self):
         self.assertEqual(web._feed_index(Path("/nonexistent/Packages")), [])
+
+
+class ProgressTest(unittest.TestCase):
+    def _farm(self, tmp: str, text: str) -> SimpleNamespace:
+        base = Path(tmp) / "builds" / "5"
+        base.mkdir(parents=True)
+        (base / "build.log").write_text(text)
+        return SimpleNamespace(builds_dir=Path(tmp) / "builds", state_dir=Path(tmp))
+
+    def test_full_build(self):
+        with tempfile.TemporaryDirectory() as d:
+            farm = self._farm(d, "[18:00:00] пакетов к сборке: 15\n[18:00:01] [1/15] aurora\n[18:01:00] [2/15] halo\n")
+            p = web._progress(farm, {"id": 5}, 15)
+            self.assertEqual(p["done"], {"aurora"})
+            self.assertEqual(p["current"], "halo")
+            self.assertTrue(p["full"])
+
+    def test_point_build(self):
+        with tempfile.TemporaryDirectory() as d:
+            farm = self._farm(d, "[18:00:00] пакетов к сборке: 1\n[18:00:01] [1/1] halo-mod-dash-gauge\n")
+            p = web._progress(farm, {"id": 5}, 15)
+            self.assertEqual(p["done"], set())
+            self.assertEqual(p["current"], "halo-mod-dash-gauge")
+            self.assertFalse(p["full"])
+
+    def test_no_log(self):
+        with tempfile.TemporaryDirectory() as d:
+            farm = SimpleNamespace(builds_dir=Path(d) / "builds")
+            self.assertIsNone(web._progress(farm, {"id": 99}, 15))
 
 
 class PlanTest(unittest.TestCase):
