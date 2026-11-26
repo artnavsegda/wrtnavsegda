@@ -106,7 +106,7 @@ test.describe("главная: пакеты", () => {
   test("выбор пакета показывает репозиторий и коммит", async ({ page }) => {
     await page.locator('#packages .row.pkg[data-name="zenith-uc"]').click();
     await expect(page.locator("#uptitle")).toContainText("horizon-uc", { timeout: 60_000 });
-    await expect(page.locator("#uptop")).toContainText("30cc82f");
+    await expect(page.locator("#commits .commit.hit")).toContainText("30cc82f");
     await expect(page.locator("#upback")).toBeVisible();
     await page.locator("#upback").click();
     await expect(page.locator("#uptitle")).toContainText("wrtnavsegda");

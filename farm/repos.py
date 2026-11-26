@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import time
@@ -23,19 +24,31 @@ def cache_dir(farm: Farm, url: str) -> Path:
     return farm.state_dir / "git" / _name(url)
 
 
-def _run(cmd: list[str], timeout: int = 180) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
+ENV = {
+    **os.environ,
+    "GIT_TERMINAL_PROMPT": "0",
+    "GIT_SSH_COMMAND": "ssh -o BatchMode=yes -o ConnectTimeout=10",
+}
+
+
+def _run(cmd: list[str], timeout: int = 30) -> subprocess.CompletedProcess:
+    try:
+        return subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, env=ENV)
+    except subprocess.TimeoutExpired:
+        raise RepoError(f"репозиторий не отвечает: {' '.join(cmd[:4])}…") from None
 
 
 def ensure(farm: Farm, url: str, ttl: int = 600) -> Path:
+    if url.startswith("git://"):
+        raise RepoError("git:// больше не поддерживается — история этого пакета недоступна")
     path = cache_dir(farm, url)
     if not (path / "HEAD").exists():
         path.parent.mkdir(parents=True, exist_ok=True)
-        proc = _run(["git", "clone", "--bare", "--filter=blob:none", url, str(path)])
+        proc = _run(["git", "clone", "--bare", "--filter=blob:none", url, str(path)], timeout=45)
         if proc.returncode:
             raise RepoError(f"git clone {url}: {proc.stderr.strip()[:300]}")
     elif time.time() - (path / "HEAD").stat().st_mtime > ttl:
-        _run(["git", "-C", str(path), "fetch", "--prune", "--tags", "origin"], timeout=120)
+        _run(["git", "-C", str(path), "fetch", "--prune", "--tags", "origin"], timeout=45)
     return path
 
 
@@ -52,7 +65,7 @@ def info(farm: Farm, url: str, rev: str, limit: int = 40) -> dict:
 
     out = log(rev)
     if not out.strip():
-        _run(["git", "-C", str(path), "fetch", "origin", rev], timeout=120)
+        _run(["git", "-C", str(path), "fetch", "origin", rev], timeout=45)
         out = log(rev)
     commits = []
     for line in out.splitlines():

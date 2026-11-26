@@ -198,20 +198,24 @@ async function loadSource(name) {
   $("#uptop").textContent = "";
   $("#commits").innerHTML = "";
   $("#upback").style.display = "none";
+  const ctl = new AbortController();
+  const timer = setTimeout(() => ctl.abort(), 25_000);
   try {
-    const d = await api(`/api/source?flavor=${encodeURIComponent(flavor)}&package=${encodeURIComponent(name)}`);
+    const d = await api(`/api/source?flavor=${encodeURIComponent(flavor)}&package=${encodeURIComponent(name)}`, { signal: ctl.signal });
     if (d.error) { syncUpstream(name); $("#upnote").textContent = d.error; return; }
     renderSource(name, d);
   } catch (e) {
     syncUpstream(name);
-    $("#upnote").textContent = e.message;
+    $("#upnote").textContent = e.name === "AbortError" ? "репозиторий не ответил за 25 с" : e.message;
+  } finally {
+    clearTimeout(timer);
   }
 }
 
 function renderSource(name, d) {
   $("#uptitle").textContent = `Апстрим · ${d.repo}`;
   $("#upback").style.display = "inline-flex";
-  $("#uptop").textContent = `${d.commit} · ${d.date || "?"} · ${d.found ? d.subject : "коммита нет в кэше"}`;
+  $("#uptop").textContent = "";
   $("#commits").innerHTML = d.commits.length
     ? d.commits
         .map((c) => `<div class="commit" data-hash="${esc(c.hash)}"><span class="h">${esc(c.hash)}</span><span>${esc(c.date)} · ${esc(c.subject)}</span></div>`)
