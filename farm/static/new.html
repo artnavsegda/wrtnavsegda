@@ -10,41 +10,94 @@
   <div>
     <div class="crumbs"><a href="/">← ферма</a> · платформа · новая</div>
     <h1>Новая платформа</h1>
-    <p class="sub">Короткое имя и путь к распакованному SDK. Target и arch задаются из списка поддерживаемых.</p>
+    <p class="sub">Имя, архитектура и путь к SDK. Архитектура выбирается из поддерживаемых — вручную не вводится.</p>
   </div>
 </header>
 
-<main class="pgrid">
+<main class="pgrid newgrid">
   <section class="block">
     <div class="card form">
-      <label>Имя платформы<input id="name" placeholder="wrs" spellcheck="false"></label>
-      <label>Board<input id="board" placeholder="wrs" spellcheck="false">
-        <span class="hint">как в board_name: mt02, ipq50, irm, wrs, x86</span></label>
-      <label>Target (OpenWrt)<select id="target">
-        <option value="ramips/mt7620|mipsel_24kc">ramips/mt7620 · mipsel_24kc</option>
-        <option value="ramips/mt7621|mipsel_24kc">ramips/mt7621 · mipsel_24kc</option>
-        <option value="ipq40xx/generic|arm_cortex-a7_neon-vfpv4">ipq40xx/generic · arm_cortex-a7_neon-vfpv4</option>
-        <option value="mediatek/filogic|aarch64_cortex-a53">mediatek/filogic · aarch64_cortex-a53</option>
-        <option value="x86/64|x86_64">x86/64 · x86_64</option>
-      </select></label>
-      <label>Arch (из target)<input id="arch" readonly></label>
-      <label>Release<input id="release" value="24.10.2" spellcheck="false"></label>
-      <label>SDK<input id="sdk" placeholder="~/sdk24-wrs/openwrt-sdk-…" spellcheck="false">
-        <span class="hint">каталог распакованного SDK; проверяется наличие scripts/feeds</span></label>
-      <label>Шаблон feeds.conf<input id="feeds" value="feeds/" spellcheck="false">
-        <span class="hint">относительно farm/ или абсолютный путь</span></label>
-      <label>arch-extras (через запятую)<input id="extras" spellcheck="false" placeholder="irz/lighttpd-mod-proxy_*.ipk"></label>
-      <label>Бренды</label>
-      <div class="flavors">
-        <label class="fchip on"><input type="checkbox" id="b-irz" checked>IRZ</label>
-        <label class="fchip on"><input type="checkbox" id="b-dnx" checked>Donyx</label>
+      <div class="frow">
+        <label class="label">Имя платформы</label>
+        <input id="name" placeholder="wrs" spellcheck="false">
+        <div class="hint">Короткое имя, как в документации: R2, R50, iRM, wRS</div>
       </div>
-      <div class="actions" style="margin-top:16px">
+
+      <div class="frow">
+        <label class="label">Board</label>
+        <input id="board" placeholder="wrs" spellcheck="false">
+        <div class="hint">board_name платы: mt02, ipq50, irm, wrs, x86</div>
+      </div>
+
+      <div class="frow">
+        <label class="label">Архитектура</label>
+        <select id="target">
+          <option value="ramips/mt7620|mipsel_24kc">ramips/mt7620 · mipsel_24kc</option>
+          <option value="ramips/mt7621|mipsel_24kc">ramips/mt7621 · mipsel_24kc</option>
+          <option value="ipq40xx/generic|arm_cortex-a7_neon-vfpv4">ipq40xx/generic · arm_cortex-a7_neon-vfpv4</option>
+          <option value="mediatek/filogic|aarch64_cortex-a53">mediatek/filogic · aarch64_cortex-a53</option>
+          <option value="x86/64|x86_64">x86/64 · x86_64</option>
+        </select>
+        <div class="hint">Список — поддерживаемые таргеты OpenWrt 24.10.2. Arch подставляется из выбора:</div>
+        <div class="supported mono" id="archline"></div>
+      </div>
+
+      <div class="frow">
+        <label class="label">Release</label>
+        <input id="release" value="24.10.2" spellcheck="false">
+      </div>
+
+      <div class="frow">
+        <label class="label">SDK</label>
+        <input id="sdk" placeholder="~/sdk24-wrs/openwrt-sdk-…" spellcheck="false">
+        <div class="hint">Каталог распакованного SDK. Проверяется, что в нём есть <code>scripts/feeds</code>.</div>
+      </div>
+
+      <div class="frow">
+        <label class="label">Шаблон feeds.conf</label>
+        <input id="feeds" value="feeds/" spellcheck="false">
+        <div class="hint">Относительно farm/ или абсолютный путь.</div>
+      </div>
+
+      <div class="frow">
+        <label class="label">arch-extras</label>
+        <input id="extras" spellcheck="false" placeholder="irz/lighttpd-mod-proxy_*.ipk">
+        <div class="hint">Через запятую; arch-специфичные пакеты, которые берутся из другого фида.</div>
+      </div>
+
+      <div class="frow">
+        <label class="label">Флейворы</label>
+        <div class="flavors">
+          <label class="fchip"><input type="checkbox" id="b-irz" checked><span>IRZ</span></label>
+          <label class="fchip"><input type="checkbox" id="b-dnx" checked><span>Donyx</span></label>
+        </div>
+        <div class="hint">Какие бренды выпускаются на этой платформе.</div>
+      </div>
+
+      <div class="formactions">
+        <a class="button" href="/">Отмена</a>
         <button class="primary" id="create">Добавить платформу</button>
         <span class="muted" id="err"></span>
       </div>
     </div>
   </section>
+
+  <aside class="side">
+    <section class="card">
+      <h3>Что будет сделано</h3>
+      <div class="plan">
+        <div><span class="t">1</span><span>Проверить SDK и scripts/feeds</span><span class="d">сек</span></div>
+        <div><span class="t">2</span><span>Прочитать target и arch</span><span class="d">сек</span></div>
+        <div><span class="t">3</span><span>Записать <code>[platforms.*]</code> в farm.toml</span><span class="d">сразу</span></div>
+      </div>
+      <div class="note">Если путь не SDK или в нём нет <code>scripts/feeds</code> — платформа не создаётся, в поле будет причина. Архитектура проверяется по выбранному target.</div>
+    </section>
+
+    <section class="card">
+      <h3>Уже добавлены</h3>
+      <div class="existing" id="existing">…</div>
+    </section>
+  </aside>
 </main>
 <script src="/static/new.js"></script>
 </body>
