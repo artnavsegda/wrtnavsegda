@@ -34,6 +34,7 @@ donyx = true
 
 [platforms.r2]
 status = "active"
+brands = ["irzOS", "dnxOS"]
 board = "mt02"
 target = "ramips/mt7620"
 arch = "mipsel_24kc"
@@ -44,6 +45,7 @@ extras = []
 
 [platforms.r50]
 status = "active"
+brands = ["irzOS", "dnxOS"]
 board = "ipq50"
 target = "ipq40xx/generic"
 arch = "arm_cortex-a7_neon-vfpv4"
@@ -54,6 +56,7 @@ extras = ["irz/lighttpd-mod-proxy_*.ipk"]
 
 [platforms.irm]
 status = "active"
+brands = ["dnxOS"]
 board = "irm"
 target = "mediatek/filogic"
 arch = "aarch64_cortex-a53"

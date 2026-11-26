@@ -125,3 +125,6 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 .upheadrow .mini{display:none}
 
 .pbtn{padding:5px 12px;font-size:11.5px;border-radius:8px}
+
+.row.plat.na{opacity:.5}
+.row.plat.na.clickable{cursor:default}

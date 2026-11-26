@@ -114,6 +114,7 @@ class App:
                 "sdk_ok": bool(p.sdk and p.sdk.exists()),
                 "feeds": str(p.feeds or ""),
                 "extras": list(p.extras),
+                "brands": list(p.brands),
             }
             for p in farm.platforms.values()
         ]
@@ -188,8 +189,8 @@ class App:
                 farm.buildbot, farm.state_dir / "buildbot.json", max_age=900
             )
             info = buildbot.find_latest(manifest, farm.channel, flavor.brand, platform.board)
-        except buildbot.BuildbotError:
-            return {"error": "buildbot недоступен"}
+        except buildbot.BuildbotError as e:
+            return {"error": f"buildbot: {e}"}
         sdk = str(platform.sdk or "")
         return {
             "buildbot": {"path": info.path, "version": info.version, "number": info.number},

@@ -33,6 +33,7 @@ class Platform:
     feeds: Path | None
     extras: tuple[str, ...]
     status: str
+    brands: tuple[str, ...] = ()
     image_tree: Path | None = None
 
     @property
@@ -155,6 +156,7 @@ def load(path: Path | None = None) -> Farm:
             feeds=_path(v.get("feeds"), project),
             extras=tuple(v.get("extras", ())),
             status=v.get("status", "active"),
+            brands=tuple(v.get("brands", ())),
             image_tree=_path(v.get("image_tree"), project),
         )
 

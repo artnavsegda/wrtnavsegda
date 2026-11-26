@@ -52,6 +52,11 @@ function render() {
   flavor = cur.name;
   if (!plat || !state.platforms.some((p) => p.name === plat)) plat = cur.sdk_platform;
   if (!plat) plat = state.platforms[0] && state.platforms[0].name;
+  const curPlat = state.platforms.find((p) => p.name === plat);
+  if (curPlat && curPlat.brands && curPlat.brands.length && !curPlat.brands.includes(cur.brand)) {
+    plat = cur.sdk_platform;
+    localStorage.setItem("farm.platform", plat);
+  }
   $("#flavors").innerHTML = state.flavors
     .map((f) => `<button data-flavor="${esc(f.name)}" class="${f.name === flavor ? "on" : ""}">${esc(f.brand)} · /opkg/${esc(f.feed)}</button>`)
     .join("");
@@ -96,8 +101,11 @@ function renderPlatforms() {
     .map((p) => {
       const sdk = p.sdk_ok ? `<span class="st ok">ok</span>` : `<span class="st ${p.status === "active" ? "err" : "mut"}">${p.status === "active" ? "нет" : "planned"}</span>`;
       const st = p.status === "active" ? `<span class="st mut">active</span>` : `<span class="st mut">planned</span>`;
+      const brands = p.brands || [];
+      const off = brands.length && cur && !brands.includes(cur.brand) ? " na" : "";
       const cls = p.name === plat ? " sel" : "";
-      return `<div class="row plat clickable${cls}" data-plat="${esc(p.name)}"><span class="name">${esc(p.name)}</span><span class="mono">${esc(p.board)}</span>
+      const why = off ? ` title="нет сборок ${esc(cur.brand)} — только ${esc(brands.join(', '))}"` : "";
+      return `<div class="row plat clickable${cls}${off}" data-plat="${esc(p.name)}"${why}><span class="name">${esc(p.name)}</span><span class="mono">${esc(p.board)}</span>
         <span class="mono">${esc(p.arch)} · ${esc(p.target)}</span><span>${sdk}</span><span>${st}</span>
         <span><button class="pbtn" data-gear="${esc(p.name)}">настройки</button></span></div>`;
     })
@@ -106,6 +114,7 @@ function renderPlatforms() {
   $("#platforms").querySelectorAll("[data-plat]").forEach((row) =>
     row.addEventListener("click", (ev) => {
       if (ev.target.dataset.gear) return;
+      if (row.classList.contains("na")) return;
       plat = row.dataset.plat;
       localStorage.setItem("farm.platform", plat);
       renderPlatforms();
