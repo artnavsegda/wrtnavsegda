@@ -443,15 +443,6 @@ async function stopBuild() {
   }
 }
 
-$("#refresh").addEventListener("click", async () => {
-  lastSig = null;
-  lastFlavor = null;
-  pkgSig = null;
-  await loadState();
-  await loadPackages(true);
-  loadConfig();
-  toast("обновлено");
-});
 $("#q").addEventListener("input", (e) => { query = e.target.value; renderPackages(); });
 $("#pfilters").querySelectorAll("button").forEach((b) =>
   b.addEventListener("click", () => {
