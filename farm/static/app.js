@@ -141,7 +141,10 @@ async function loadPackages() {
         const st = p.status === "ок" ? `<span class="st ok">ок</span>` : p.status === "новый" ? `<span class="st warn">новый</span>` : `<span class="st mut">${esc(p.status)}</span>`;
         let bs = `<span class="st mut">—</span>`;
         if (p.build_state === "built") bs = `<span class="st ok">собран</span>`;
-        else if (p.build_state === "building") bs = `<span class="st info"><span class="spin"></span>собирается</span>`;
+        else if (p.build_state === "building") {
+          const bid = data.build ? data.build.id : 0;
+          bs = `<span class="st info"><span class="spin"></span>собирается<button class="mini" data-logpkg="${esc(p.dir)}" data-build="${bid}">лог</button></span>`;
+        }
         else if (p.build_state === "pending") bs = `<span class="st mut">в очереди</span>`;
         const sel = selected.has(p.name) ? " sel" : "";
         const clickable = p.dir ? " clickable" : "";
@@ -153,6 +156,17 @@ async function loadPackages() {
       })
       .join("");
     $("#packages").innerHTML = head + (rows || `<div class="empty">Фид пуст.</div>`);
+    const cur = data.current;
+    if (cur && cur.last) {
+      const row = $("#packages").querySelector(`[data-dir="${cur.dir}"][data-name]`);
+      if (row) row.title = cur.last.slice(0, 300);
+    }
+    $("#packages").querySelectorAll("[data-logpkg]").forEach((b) =>
+      b.addEventListener("click", (ev) => {
+        ev.stopPropagation();
+        openPkgLog(b.dataset.build, b.dataset.logpkg);
+      })
+    );
     $("#packages").querySelectorAll("[data-name]").forEach((row) =>
       row.addEventListener("click", () => {
         const name = row.dataset.name;
@@ -183,13 +197,21 @@ async function loadConfig() {
   }
 }
 
+function openPkgLog(buildId, pkg) {
+  showLog(`Лог · ${pkg}`, () => api(`/api/log?build=${buildId}&pkg=${encodeURIComponent(pkg)}&lines=100`));
+}
+
 function openLog(id, open = true) {
+  showLog(`Лог · сборка #${id}`, () => api(`/api/builds/${id}/log`), open);
+}
+
+function showLog(title, fetcher, open = true) {
   const dlg = $("#logdlg");
-  $("#logtitle").textContent = `Лог · сборка #${id}`;
+  $("#logtitle").textContent = title;
   if (open) dlg.showModal();
   const tick = async () => {
     try {
-      const data = await api(`/api/builds/${id}/log`);
+      const data = await fetcher();
       const el = $("#log");
       const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 20;
       el.textContent = data.lines.join("\n") || "лога нет";

@@ -251,9 +251,21 @@ class App:
                          "status": "не в фиде", "build_version": "", "build_state": state_of(name),
                          "dir": plan[name][1], "source": sources.get(name, {})})
         rows.sort(key=lambda r: (plan.get(r["name"], (999, ""))[0], r["name"]))
-        return {"feed": flavor.feed, "packages": rows, "build": build,
+        current = None
+        if running:
+            last_lines = self.payload_pkg_log(last["id"] if last else 0, running[2], 1)["lines"]
+            current = {"dir": running[2], "last": last_lines[-1].strip() if last_lines else ""}
+        return {"feed": flavor.feed, "packages": rows, "build": build, "current": current,
                 "plan": {"total": len(farm.packages(flavor)), "running": running is not None,
                          "current": running[0] if running else 0, "dir": running[2] if running else ""}}
+
+    def payload_pkg_log(self, build_id: int, pkg: str, lines: int = 80) -> dict:
+        farm = config.load()
+        path = farm.builds_dir / str(build_id) / "logs" / f"{pkg}.log"
+        if not path.exists():
+            return {"lines": [], "exists": False, "pkg": pkg}
+        text = path.read_text(errors="replace").splitlines()[-lines:]
+        return {"lines": text, "exists": True, "pkg": pkg}
 
     def payload_log(self, build_id: int) -> dict:
         farm = config.load()
@@ -508,6 +520,12 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(self.app.payload_packages(q.get("flavor", ["irz"])[0]))
             if path == "/api/config":
                 return self.json(self.app.action_config(q))
+            if path == "/api/log":
+                return self.json(self.app.payload_pkg_log(
+                    int(q.get("build", ["0"])[0]),
+                    q.get("pkg", [""])[0],
+                    int(q.get("lines", ["80"])[0]),
+                ))
             if path.startswith("/api/builds/") and path.endswith("/log"):
                 return self.json(self.app.payload_log(int(path.split("/")[3])))
             if path.startswith("/api/builds/"):
