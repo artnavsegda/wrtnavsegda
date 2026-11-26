@@ -118,7 +118,7 @@ def cmd_build(args) -> int:
         only=tuple(args.only),
         release=args.release,
         dry_run=args.dry_run,
-        publish=args.publish,
+        publish=not args.no_publish,
         feeds=not args.no_feeds,
         allow_dirty=args.allow_dirty,
         refresh_buildbot=args.refresh,
@@ -216,7 +216,7 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--only", nargs="*", default=[], metavar="ПАКЕТ")
     s.add_argument("--release")
     s.add_argument("--dry-run", action="store_true")
-    s.add_argument("--publish", action="store_true")
+    s.add_argument("--no-publish", action="store_true", help="не публиковать (по умолчанию публикуем)")
     s.add_argument("--no-feeds", action="store_true")
     s.add_argument("--allow-dirty", action="store_true")
     s.add_argument("--refresh", action="store_true")

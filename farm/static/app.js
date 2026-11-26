@@ -81,7 +81,6 @@ function render() {
   renderUpstream();
   renderBuilds();
   renderControls();
-  renderPublish();
   if (lastFlavor !== flavor) {
     lastFlavor = flavor;
     loadPackages(true);
@@ -168,7 +167,6 @@ function renderControls() {
   const running = state.builds.some((b) => b.status === "running");
   $("#stop").disabled = !running;
   $("#build").disabled = running;
-  $("#buildpublish").disabled = running;
   $("#stop").title = running ? "" : "нет идущей сборки";
 }
 
@@ -176,7 +174,7 @@ function updateSelectionButton() {
   const running = state.builds.some((b) => b.status === "running");
   const btn = $("#rebuild");
   if (!btn) return;
-  btn.textContent = checked.size ? `Собрать отмеченные · ${checked.size}` : "Собрать отмеченные";
+  btn.textContent = checked.size ? `Собрать и опубликовать · ${checked.size}` : "Собрать отмеченные";
   btn.disabled = checked.size === 0 || running;
   btn.title = running ? "идёт сборка — дождитесь её окончания" : "";
 }
@@ -234,12 +232,6 @@ function syncUpstream(name) {
     box.scrollTop += nr.top - br.top - (box.clientHeight - nr.height) / 2;
   }
   if (note) note.textContent = why;
-}
-
-function renderPublish() {
-  const b = state.builds[0];
-  $("#publish").disabled = !b || b.status !== "ok" || b.published;
-  $("#publish").onclick = b ? () => publishBuild(b.id) : null;
 }
 
 let pkgData = null;
@@ -425,20 +417,6 @@ async function stopBuild() {
   }
 }
 
-async function publishBuild(id) {
-  toast(`публикация сборки #${id}…`);
-  try {
-    const r = await api("/api/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ build: id }) });
-    toast(r.ok ? `опубликовано: ${r.output.split("\n").slice(-2)[0]}` : `ошибка: ${r.output}`, !r.ok);
-    lastSig = null;
-    pkgSig = null;
-    await loadState();
-    await loadPackages(true);
-  } catch (e) {
-    toast(e.message, true);
-  }
-}
-
 $("#refresh").addEventListener("click", async () => {
   lastSig = null;
   lastFlavor = null;
@@ -457,9 +435,8 @@ $("#pfilters").querySelectorAll("button").forEach((b) =>
   })
 );
 $("#pull").addEventListener("click", pull);
-$("#build").addEventListener("click", () => startBuild(false));
-$("#buildpublish").addEventListener("click", () => startBuild(true));
-$("#rebuild").addEventListener("click", () => startBuild(false, [...checked]));
+$("#build").addEventListener("click", () => startBuild(true));
+$("#rebuild").addEventListener("click", () => startBuild(true, [...checked]));
 $("#stop").addEventListener("click", stopBuild);
 $("#upback").addEventListener("click", () => { chosen = null; renderPackages(); renderUpstream(); });
 $("#logclose").addEventListener("click", () => { clearInterval(logTimer); $("#logdlg").close(); });

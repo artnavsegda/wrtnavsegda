@@ -329,7 +329,7 @@ class App:
                     dirs.append(d)
             if dirs:
                 args += ["--only", *dirs]
-        if body.get("publish"):
+        if not body.get("skip_publish"):
             args += ["--publish"]
         log = farm.state_dir / "web-build.log"
         log.parent.mkdir(parents=True, exist_ok=True)

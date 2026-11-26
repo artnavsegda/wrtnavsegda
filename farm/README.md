@@ -28,7 +28,8 @@ python3 farm/main.py config --flavor irz --platform r50 --variant custom --out /
 python3 farm/main.py build --flavor irz --dry-run          # показать команды
 python3 farm/main.py build --flavor irz                    # собрать и записать манифест
 python3 farm/main.py build --flavor irz --only halo-mod-software
-python3 farm/main.py build --flavor donyx --publish        # собрать и опубликовать
+python3 farm/main.py build --flavor donyx                  # собрать и опубликовать (по умолчанию)
+python3 farm/main.py build --flavor irz --no-publish       # только собрать, без публикации
 python3 farm/main.py publish --build 12
 python3 farm/main.py collect --flavor irz --release 2611261403 --build 1 --ref <коммит>
 python3 farm/main.py logs --build 12
