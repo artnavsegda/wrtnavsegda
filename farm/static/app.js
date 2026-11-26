@@ -174,8 +174,10 @@ function updateSelectionButton() {
   const running = state.builds.some((b) => b.status === "running");
   const btn = $("#rebuild");
   if (!btn) return;
-  btn.textContent = checked.size ? `Собрать · ${checked.size}` : "Собрать · 0";
-  btn.disabled = checked.size === 0 || running;
+  const show = checked.size > 1;
+  btn.style.display = show ? "" : "none";
+  btn.textContent = `Собрать · ${checked.size}`;
+  btn.disabled = checked.size < 2 || running;
   btn.title = running ? "идёт сборка — дождитесь её окончания" : "собрать отмеченные пакеты";
 }
 
@@ -254,6 +256,7 @@ async function loadPackages(force = false) {
 
 function renderPackages() {
   if (!pkgData) return;
+  const running = state.builds.some((b) => b.status === "running");
   const q = query.trim().toLowerCase();
   const rowsData = pkgData.packages.filter((p) => {
     if (q && !p.name.toLowerCase().includes(q)) return false;
@@ -263,7 +266,7 @@ function renderPackages() {
     return true;
   });
 
-  const head = `<div class="row head pkg"><span></span><span>Пакет</span><span>Источник</span><span>Версия в фиде</span><span>Arch</span><span>Статус</span><span>Сборка</span></div>`;
+  const head = `<div class="row head pkg"><span></span><span>Пакет</span><span>Источник</span><span>Версия в фиде</span><span>Arch</span><span>Статус</span><span>Сборка</span><span></span></div>`;
   const rows = rowsData
     .map((p) => {
       const st = p.status === "ок" ? `<span class="st ok">ок</span>` : p.status === "новый" ? `<span class="st warn">новый</span>` : `<span class="st mut">${esc(p.status)}</span>`;
