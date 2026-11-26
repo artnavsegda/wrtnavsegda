@@ -45,7 +45,7 @@ button.danger{color:var(--red);border-color:#FCA5A5}
 .row{display:grid;align-items:center;gap:12px;padding:11px 20px;font-size:13px;border-top:1px solid #F1F2F4;min-height:44px}
 .row:first-child{border-top:0}
 .row.head{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:600;min-height:0;padding:11px 16px 9px}
-.plat{grid-template-columns:60px 90px 1fr 150px 90px 104px}
+.plat{grid-template-columns:84px 80px 1fr 140px 84px 104px}
 .pkg{grid-template-columns:24px minmax(150px,1fr) 140px 120px 84px 150px 88px}
 .bld{grid-template-columns:56px 80px 1fr 150px 215px 90px}
 .row > *{min-width:0}
@@ -140,3 +140,5 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 .bmeta .platrow{grid-template-columns:130px 1fr}
 
 .brow{grid-template-columns:minmax(160px,1fr) 150px 110px 80px 1fr}
+
+.row.head span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
