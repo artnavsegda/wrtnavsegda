@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>ipk farm · сборка</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <div class="crumbs"><a href="/">← ферма</a> · сборка</div>
+    <h1 id="btitle">…</h1>
+    <p class="sub" id="bsub">…</p>
+  </div>
+  <div class="topact"><span id="bstate" class="st mut"></span></div>
+</header>
+<main>
+  <section class="block">
+    <div class="card bmeta" id="bmeta"></div>
+  </section>
+  <section class="block">
+    <div class="blockhead"><h2>Пакеты</h2><span class="muted" id="bcount"></span></div>
+    <div class="table" id="bpackages"></div>
+  </section>
+  <section class="block">
+    <div class="blockhead"><h2>Лог</h2><span class="muted" id="blogmeta"></span></div>
+    <pre class="log" id="blog">—</pre>
+  </section>
+</main>
+<script src="/static/build.js"></script>
+</body>
+</html>

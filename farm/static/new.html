@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>ipk farm · новая платформа</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <div class="crumbs"><a href="/">← ферма</a> · платформа · новая</div>
+    <h1>Новая платформа</h1>
+    <p class="sub">Короткое имя и путь к распакованному SDK. Target и arch задаются из списка поддерживаемых.</p>
+  </div>
+</header>
+
+<main class="pgrid">
+  <section class="block">
+    <div class="card form">
+      <label>Имя платформы<input id="name" placeholder="wrs" spellcheck="false"></label>
+      <label>Board<input id="board" placeholder="wrs" spellcheck="false">
+        <span class="hint">как в board_name: mt02, ipq50, irm, wrs, x86</span></label>
+      <label>Target (OpenWrt)<select id="target">
+        <option value="ramips/mt7620|mipsel_24kc">ramips/mt7620 · mipsel_24kc</option>
+        <option value="ramips/mt7621|mipsel_24kc">ramips/mt7621 · mipsel_24kc</option>
+        <option value="ipq40xx/generic|arm_cortex-a7_neon-vfpv4">ipq40xx/generic · arm_cortex-a7_neon-vfpv4</option>
+        <option value="mediatek/filogic|aarch64_cortex-a53">mediatek/filogic · aarch64_cortex-a53</option>
+        <option value="x86/64|x86_64">x86/64 · x86_64</option>
+      </select></label>
+      <label>Arch (из target)<input id="arch" readonly></label>
+      <label>Release<input id="release" value="24.10.2" spellcheck="false"></label>
+      <label>SDK<input id="sdk" placeholder="~/sdk24-wrs/openwrt-sdk-…" spellcheck="false">
+        <span class="hint">каталог распакованного SDK; проверяется наличие scripts/feeds</span></label>
+      <label>Шаблон feeds.conf<input id="feeds" value="feeds/" spellcheck="false">
+        <span class="hint">относительно farm/ или абсолютный путь</span></label>
+      <label>arch-extras (через запятую)<input id="extras" spellcheck="false" placeholder="irz/lighttpd-mod-proxy_*.ipk"></label>
+      <label>Бренды</label>
+      <div class="flavors">
+        <label class="fchip on"><input type="checkbox" id="b-irz" checked>IRZ</label>
+        <label class="fchip on"><input type="checkbox" id="b-dnx" checked>Donyx</label>
+      </div>
+      <div class="actions" style="margin-top:16px">
+        <button class="primary" id="create">Добавить платформу</button>
+        <span class="muted" id="err"></span>
+      </div>
+    </div>
+  </section>
+</main>
+<script src="/static/new.js"></script>
+</body>
+</html>

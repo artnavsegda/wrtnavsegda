@@ -262,3 +262,58 @@ def remove_platform(project: Path, name: str) -> None:
                     lines.append(f"{k} = {_toml_value(v)}")
                 lines.append("")
             local.write_text("\n".join(lines))
+
+
+NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
+
+
+def add_platform(project: Path, name: str, values: dict) -> None:
+    """Добавить платформу в farm.toml (с проверкой SDK и шаблона feeds)."""
+    if not NAME_RE.match(name or ""):
+        raise ConfigError("имя платформы: строчные латинские буквы, цифры, - и _")
+    farm_file = project / "farm.toml"
+    text = farm_file.read_text() if farm_file.exists() else ""
+    raw = tomllib.loads(text) if text.strip() else {}
+    if name in raw.get("platforms", {}):
+        raise ConfigError(f"платформа «{name}» уже есть")
+
+    sdk = _path(values.get("sdk"), project)
+    if not sdk or not sdk.exists():
+        raise ConfigError(f"нет каталога SDK: {values.get('sdk')}")
+    if not (sdk / "scripts" / "feeds").exists():
+        raise ConfigError(f"это не OpenWrt SDK (нет scripts/feeds): {sdk}")
+    feeds = _path(values.get("feeds"), project)
+    if not feeds or not feeds.exists():
+        raise ConfigError(f"нет шаблона feeds.conf: {values.get('feeds')}")
+    for key in ("board", "target", "arch", "release"):
+        if not str(values.get(key) or "").strip():
+            raise ConfigError(f"не заполнено поле {key}")
+
+    brands = values.get("brands") or ["irzOS", "dnxOS"]
+    extras = values.get("extras") or []
+    if isinstance(extras, str):
+        extras = [x.strip() for x in extras.split(",") if x.strip()]
+
+    block = [
+        "",
+        f"[platforms.{name}]",
+        'status = "active"',
+        f"brands = {_toml_value(list(brands))}",
+        f"board = {_toml_value(values['board'])}",
+        f"target = {_toml_value(values['target'])}",
+        f"arch = {_toml_value(values['arch'])}",
+        f"release = {_toml_value(values['release'])}",
+        f"sdk = {_toml_value(values['sdk'])}",
+        f"feeds = {_toml_value(_rel(project, values['feeds']))}",
+        f"extras = {_toml_value(extras)}",
+        "",
+    ]
+    farm_file.write_text(text.rstrip() + "\n" + "\n".join(block))
+
+
+def _rel(project: Path, value: str) -> str:
+    p = _path(value, project)
+    try:
+        return str(p.relative_to(project))
+    except ValueError:
+        return str(p)

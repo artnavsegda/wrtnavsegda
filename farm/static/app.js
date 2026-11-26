@@ -132,6 +132,8 @@ function renderPlatforms() {
   );
   const active = state.platforms.filter((p) => p.status === "active").length;
   $("#platsum").textContent = `${active} активных · пакеты all, сборка на flavor`;
+  const add = document.querySelector("#addplat");
+  if (add) add.onclick = () => { location.href = "/platform/new"; };
 }
 
 function renderUpstream() {
@@ -162,11 +164,11 @@ function renderBuilds() {
       const pub = b.published ? ` · опубликовано` : "";
       return `<div class="row bld"><span class="mono">${b.id}</span><span>${esc(b.flavor)}</span><span class="mono">${esc(b.platform)}</span>
         <span class="mono">${dt(b.started)}</span><span>${st}${pub}</span>
-        <span><button data-log="${b.id}">Лог</button></span></div>`;
+        <span><a class="button" href="/build/${b.id}">сборка</a></span></div>`;
     })
     .join("");
   $("#builds").innerHTML = head + (rows || `<div class="empty">Сборок ещё нет.</div>`);
-  $("#builds").querySelectorAll("[data-log]").forEach((b) => b.addEventListener("click", () => openLog(b.dataset.log)));
+
 }
 
 function renderControls() {

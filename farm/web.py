@@ -512,6 +512,13 @@ class App:
             return {"ok": False, "error": str(e)}
         return {"ok": proc.returncode == 0, "output": (proc.stdout + proc.stderr)[-8000:]}
 
+    def action_platform_add(self, body: dict) -> dict:
+        try:
+            config.add_platform(config.PROJECT, str(body.get("name", "")).strip(), body)
+        except config.ConfigError as e:
+            return {"ok": False, "error": str(e)}
+        return {"ok": True, "name": str(body.get("name", "")).strip()}
+
     def action_platform_delete(self, name: str) -> dict:
         try:
             config.remove_platform(config.PROJECT, name)
@@ -793,6 +800,10 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(self.app.payload_packages(q.get("flavor", ["irz"])[0]))
             if path == "/api/config":
                 return self.json(self.app.action_config(q))
+            if path == "/platform/new":
+                return self.static("new.html")
+            if path.startswith("/build/"):
+                return self.static("build.html")
             if path.startswith("/platform/"):
                 return self.static("platform.html")
             if path.startswith("/api/platform/"):
@@ -839,6 +850,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(self.app.action_publish(body))
             if url.path == "/api/stop":
                 return self.json(self.app.action_stop(body))
+            if url.path == "/api/platforms":
+                return self.json(self.app.action_platform_add(body))
             if url.path.startswith("/api/platform/"):
                 parts = url.path[len("/api/platform/"):].split("/")
                 if len(parts) == 2:

@@ -131,3 +131,10 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 
 .dangerzone{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 18px;border-color:#FCA5A5}
 .dangerzone h3{margin:0 0 4px}
+
+.form select{font:inherit;font-size:12px;border:1px solid var(--line);border-radius:9px;padding:8px 10px;background:#fff}
+.flavors{display:flex;gap:8px}
+.fchip{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;display:flex;align-items:center;gap:7px;color:var(--sub)}
+.fchip.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue-tx);font-weight:600}
+.bmeta{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px 24px}
+.bmeta .platrow{grid-template-columns:130px 1fr}
