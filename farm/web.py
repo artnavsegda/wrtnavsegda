@@ -20,7 +20,7 @@ from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
 from . import buildbot, config, opkgcfg, repos, state
-from .sources import makefile_packages, source_map
+from .sources import makefile_packages, repo_dirs, source_map
 
 STATIC = Path(__file__).resolve().parent / "static"
 PROJECT = Path(__file__).resolve().parent
@@ -254,7 +254,15 @@ class App:
             rows.append({"name": name, "version": "", "arch": "", "depends": "", "size": 0,
                          "status": "не в фиде", "build_version": "", "build_state": state_of(name),
                          "dir": plan[name][1], "source": sources.get(name, {})})
-        rows.sort(key=lambda r: (plan.get(r["name"], (999, ""))[0], r["name"]))
+        for d in repo_dirs(farm):
+            for name in makefile_packages(farm.repo / d / "Makefile") or [d]:
+                if name in seen:
+                    continue
+                seen.add(name)
+                rows.append({"name": name, "version": "", "arch": "", "depends": "", "size": 0,
+                             "status": "не в сборке", "build_version": "", "build_state": "",
+                             "dir": d, "source": sources.get(name, {})})
+        rows.sort(key=lambda r: (plan.get(r["name"], (999, r.get("dir", "")))[0], r["name"]))
         current = None
         if running:
             last_lines = self.payload_pkg_log(last["id"] if last else 0, running[2], 1)["lines"]
@@ -306,9 +314,16 @@ class App:
         want = body.get("only") or body.get("packages") or []
         if want:
             plan = _plan(farm, farm.flavor(flavor))
+            all_dirs = repo_dirs(farm)
             dirs = []
             for item in want:
-                d = plan.get(str(item), (0, ""))[1]
+                item = str(item)
+                d = plan.get(item, (0, ""))[1]
+                if not d:
+                    for dd in all_dirs:
+                        if item in (makefile_packages(farm.repo / dd / "Makefile") or [dd]):
+                            d = dd
+                            break
                 if d and d not in dirs:
                     dirs.append(d)
             if dirs:

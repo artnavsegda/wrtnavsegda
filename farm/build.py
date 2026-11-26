@@ -188,9 +188,9 @@ class Builder:
     def compile(self) -> None:
         dirs = self.farm.packages(self.flavor)
         if self.opts.only:
-            missing = [d for d in self.opts.only if d not in dirs]
+            missing = [d for d in self.opts.only if not (self.farm.repo / d / "Makefile").exists()]
             if missing:
-                raise BuildError(f"нет в {self.flavor.packages.name}: {', '.join(missing)}")
+                raise BuildError(f"нет каталога в репозитории: {', '.join(missing)}")
             dirs = list(self.opts.only)
         self.log(f"пакетов к сборке: {len(dirs)} · release {self.release}")
         env = self.env()

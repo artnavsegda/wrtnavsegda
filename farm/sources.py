@@ -33,26 +33,45 @@ def _url(text: str) -> str:
     return m.group(1) if m else ""
 
 
-def source_map(farm: Farm, flavor: Flavor) -> dict[str, dict]:
+def repo_dirs(farm: Farm) -> list[str]:
+    """Все каталоги репозитория с Makefile, объявляющим пакеты."""
+    out = []
+    for p in sorted(farm.repo.iterdir()):
+        if not p.is_dir() or p.name.startswith("."):
+            continue
+        mk = p / "Makefile"
+        if mk.exists() and makefile_packages(mk):
+            out.append(p.name)
+    return out
+
+
+def source_of(farm: Farm, d: str, halo_text: str | None = None) -> dict:
+    repo_dir = farm.repo
+    if halo_text is None:
+        halo = repo_dir / "halo.mk"
+        halo_text = halo.read_text(errors="replace") if halo.exists() else ""
+    mk = repo_dir / d / "Makefile"
+    text = mk.read_text(errors="replace") if mk.exists() else ""
+    if "../halo.mk" in text:
+        repo, commit = _pin(halo_text, "HALO")
+        url = _url(halo_text)
+    elif "AURORA_PINNED" in text:
+        repo, commit = _pin(text, "AURORA")
+        url = _url(text)
+    else:
+        h = re.search(r"^PKG_SOURCE_VERSION\s*:?=\s*([0-9a-f]{7,40})", text, re.M)
+        url = _url(text)
+        repo = url.rstrip("/").split("/")[-1].removesuffix(".git") if url else ""
+        commit = h.group(1) if h else ""
+    return {"repo": repo or "в репо", "commit": commit[:7], "commit_full": commit, "url": url}
+
+
+def source_map(farm: Farm, flavor: Flavor | None = None) -> dict[str, dict]:
     out: dict[str, dict] = {}
     halo = farm.repo / "halo.mk"
     halo_text = halo.read_text(errors="replace") if halo.exists() else ""
-    for d in farm.packages(flavor):
-        mk = farm.repo / d / "Makefile"
-        text = mk.read_text(errors="replace") if mk.exists() else ""
-        names = makefile_packages(mk) or [d]
-        if "../halo.mk" in text:
-            repo, commit = _pin(halo_text, "HALO")
-            url = _url(halo_text)
-        elif "AURORA_PINNED" in text:
-            repo, commit = _pin(text, "AURORA")
-            url = _url(text)
-        else:
-            h = re.search(r"^PKG_SOURCE_VERSION\s*:?=\s*([0-9a-f]{7,40})", text, re.M)
-            url = _url(text)
-            repo = url.rstrip("/").split("/")[-1].removesuffix(".git") if url else ""
-            commit = h.group(1) if h else ""
-        info = {"repo": repo or "в репо", "commit": commit[:7], "commit_full": commit, "url": url}
-        for n in names:
+    for d in repo_dirs(farm):
+        info = source_of(farm, d, halo_text)
+        for n in makefile_packages(farm.repo / d / "Makefile") or [d]:
             out[n] = info
     return out
