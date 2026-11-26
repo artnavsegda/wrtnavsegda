@@ -174,11 +174,13 @@ function updateSelectionButton() {
   const running = state.builds.some((b) => b.status === "running");
   const btn = $("#rebuild");
   if (!btn) return;
-  const show = checked.size > 1;
-  btn.style.display = show ? "" : "none";
+  const multi = checked.size > 1;
+  btn.style.display = multi ? "" : "none";
   btn.textContent = `Собрать · ${checked.size}`;
-  btn.disabled = checked.size < 2 || running;
+  btn.disabled = running;
   btn.title = running ? "идёт сборка — дождитесь её окончания" : "собрать отмеченные пакеты";
+  const all = $("#build");
+  if (all) all.style.display = multi ? "none" : "";
 }
 
 async function loadSource(name) {
@@ -409,6 +411,7 @@ async function pull() {
 async function startBuild(publish, packages = []) {
   const body = { flavor, platform: plat, publish, packages };
   checked.clear();
+  updateSelectionButton();
   toast(publish ? "сборка и публикация запущены…" : "сборка запущена…");
   try {
     await api("/api/build", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
