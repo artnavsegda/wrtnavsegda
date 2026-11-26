@@ -149,7 +149,10 @@ function syncUpstream(name) {
   }
   if (node) {
     node.classList.add("hit");
-    node.scrollIntoView({ block: "center" });
+    const box = $("#commits");
+    const br = box.getBoundingClientRect();
+    const nr = node.getBoundingClientRect();
+    box.scrollTop += nr.top - br.top - (box.clientHeight - nr.height) / 2;
   }
   if (note) note.textContent = why;
 }
