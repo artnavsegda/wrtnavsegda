@@ -143,7 +143,8 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 
 .row.head span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.newgrid{grid-template-columns:1fr 400px}
+.newgrid{grid-template-columns:780px 400px;gap:18px;justify-content:start}
+@media (max-width:1250px){.newgrid{grid-template-columns:1fr}}
 .form .frow{margin-bottom:20px}
 .form .label{font-size:11px;font-weight:600;color:#374151;margin-bottom:6px;display:block}
 .form .hint{font-size:10.5px;color:var(--mut);margin-top:6px;line-height:1.45}
@@ -152,6 +153,7 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 .form select{height:40px;width:100%}
 .form .formactions{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:24px;padding-top:18px;border-top:1px solid var(--line)}
 .formactions .muted{margin-right:auto;font-size:11px}
+.form .fchip{display:flex;align-items:center;gap:8px;border-radius:999px;padding:6px 14px;width:auto}
 .flavors .fchip input{width:14px;height:14px;margin:0;accent-color:var(--blue)}
 .flavors .fchip{cursor:pointer}
 .plan{display:grid;gap:9px;font-size:11.5px;color:var(--sub)}
@@ -159,6 +161,9 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 .plan .t{color:var(--green);font-weight:700;font-size:10px}
 .plan .d{color:var(--mut);font-size:10px;white-space:nowrap}
 .plan code{font-family:var(--mono);font-size:10px;background:#F3F4F6;padding:1px 4px;border-radius:3px}
-.existing{display:grid;gap:10px}
+.existing{display:grid;gap:10px;min-width:0}
 .ex .n{font-size:12px;font-weight:600}
+.ex{min-width:0}
 .ex .p{font-family:var(--mono);font-size:9.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+
+.side .note{margin-top:12px;line-height:1.55}
