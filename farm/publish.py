@@ -89,12 +89,12 @@ def _publish(farm, manifest, dest: Path, src: Path, sdk: Path, key: Path, pub: P
     produced = Path(str(tmp) + ".sig")
     if not produced.exists():
         raise BuildError("usign не создал подпись")
-    produced.replace(sig)
 
     if pub.exists():
         check = subprocess.run(["usign", "-V", "-m", str(tmp), "-p", str(pub)], env=env, capture_output=True)
         if check.returncode:
             raise BuildError(f"подпись не проверяется: {check.stderr.decode(errors='replace')}")
+    produced.replace(sig)
 
     tmp.replace(dest / "Packages")
     gz.replace(dest / "Packages.gz")
