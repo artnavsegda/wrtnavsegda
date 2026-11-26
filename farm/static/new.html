@@ -9,12 +9,12 @@
 <header class="top">
   <div>
     <div class="crumbs"><a href="/">← ферма</a> · платформа · новая</div>
-    <h1>Новая платформа</h1>
-    <p class="sub">Имя, архитектура и источник SDK. Архитектура выбирается из поддерживаемых — вручную не вводится.</p>
+    <h1 id="pagehead">Новая платформа</h1>
+    <p class="sub" id="pagesub">Имя, архитектура и источник SDK. Архитектура выбирается из поддерживаемых — вручную не вводится.</p>
   </div>
 </header>
 
-<main class="pgrid newgrid">
+<main class="newgrid" id="addform">
   <section class="block">
     <div class="card form" id="form">
       <div class="frow">
@@ -38,7 +38,7 @@
           <option value="mediatek/filogic|aarch64_cortex-a53">mediatek/filogic · aarch64_cortex-a53</option>
           <option value="x86/64|x86_64">x86/64 · x86_64</option>
         </select>
-        <div class="hint">Список — поддерживаемые таргеты OpenWrt 24.10.2. Arch подставляется из выбора:</div>
+        <div class="hint">Обязательное поле. Список — поддерживаемые таргеты OpenWrt 24.10.2:</div>
         <div class="supported mono" id="archline"></div>
       </div>
 
@@ -49,23 +49,36 @@
 
       <div class="frow">
         <label class="label">Источник SDK</label>
-        <div class="tabs small" id="srctabs">
-          <button data-src="archive" class="on">Готовый архив</button>
-          <button data-src="git">Исходники из Git</button>
+        <div class="seg" id="srctabs">
+          <button data-src="git" class="on">Исходники из Git</button>
+          <button data-src="archive">Готовый архив</button>
         </div>
 
-        <div id="src-archive">
-          <div class="hint" style="margin-top:10px">SDK скачается с <code>downloads.openwrt.org</code> для выбранного target и release, sha256 проверится, архив распакуется.</div>
-          <div class="urlpreview mono" id="urlpreview"></div>
+        <div id="src-git">
+          <div class="dl">
+            <div class="dlrow">
+              <input id="repo" value="https://git.openwrt.org/openwrt/openwrt.git" spellcheck="false">
+              <select id="branch">
+                <option value="openwrt-24.10">openwrt-24.10</option>
+                <option value="openwrt-23.05">openwrt-23.05</option>
+                <option value="master">master</option>
+              </select>
+            </div>
+            <div class="meta"><span>клон shallow · коммит фиксируется в манифесте</span><span class="ok" id="gitrel">→ OpenWrt 24.10.2</span></div>
+          </div>
+          <div class="hint">Ветка задаёт версию платформы. Для iRZ/Donyx — тот же механизм, но репозиторий адаптации с патчами:
+            <span class="mono">git@gitlab.radiofid.ru:Routers/Developing/clean/openwrt.git</span>.</div>
+          <div class="hint">Или готовый архив: SDK того же таргета скачивается с downloads.openwrt.org за 2–3 минуты, без сборки.</div>
         </div>
 
-        <div id="src-git" style="display:none">
-          <label class="label" style="margin-top:12px">Репозиторий</label>
-          <input id="repo" value="https://git.openwrt.org/openwrt/openwrt.git" spellcheck="false">
-          <div class="hint">Upstream OpenWrt или адаптация компании с патчами.</div>
-          <label class="label" style="margin-top:12px">Ветка</label>
-          <input id="branch" value="openwrt-24.10" spellcheck="false">
-          <div class="hint">Ветка задаёт версию платформы; коммит фиксируется в манифесте сборок.</div>
+        <div id="src-archive" style="display:none">
+          <div class="dl">
+            <div class="dlrow">
+              <span class="url" id="urlpreview"></span>
+            </div>
+            <div class="meta"><span>sha256 проверится перед распаковкой</span><span class="ok">→ OpenWrt 24.10.2</span></div>
+          </div>
+          <div class="hint">SDK скачивается с downloads.openwrt.org для выбранного target и release, распаковывается в <span class="mono">~/sdk-&lt;имя&gt;</span>.</div>
         </div>
       </div>
 
@@ -79,16 +92,10 @@
       </div>
 
       <div class="formactions">
-        <a class="button" href="/">Отмена</a>
-        <button class="primary" id="create">Скачать и добавить</button>
         <span class="muted" id="err"></span>
+        <a class="button" href="/">Отмена</a>
+        <button class="primary" id="create">Собрать SDK</button>
       </div>
-    </div>
-
-    <div class="card" id="progress" style="display:none">
-      <h3 id="ptitle">Готовлю SDK…</h3>
-      <pre class="log" id="plog"></pre>
-      <div class="muted" id="pnote">Можно закрыть страницу: работа идёт на ферме.</div>
     </div>
   </section>
 
@@ -99,9 +106,9 @@
       <div class="note" id="plannote"></div>
     </section>
 
-    <section class="card yellow" id="longbuild" style="display:none">
+    <section class="card">
       <h3>Долгая сборка</h3>
-      <div>≈4–8 часов. Идёт на ферме в фоне: платформа появится, когда SDK будет готов, страницу можно закрыть. Готовый архив — 2–3 минуты.</div>
+      <div class="srccost" id="srccost"></div>
     </section>
 
     <section class="card">
@@ -110,6 +117,30 @@
     </section>
   </aside>
 </main>
+
+<main class="prov" id="prov" style="display:none">
+  <section class="card prog">
+    <div class="pmeta"><span id="provnow">подготовка…</span><span id="provstep"></span></div>
+    <div class="steps3" id="provsteps"></div>
+    <div class="note">Можно закрыть страницу: работа идёт на ферме. Платформа появится в списке, когда SDK будет готов. Если что-то не сойдётся — причина в логе, платформа не создаётся.</div>
+  </section>
+
+  <aside class="provside">
+    <section class="card">
+      <div class="lhead"><span class="live" id="provlive"></span>Лог подготовки</div>
+      <pre class="provlog" id="provlog">…</pre>
+    </section>
+    <section class="card">
+      <h3>Пока идёт</h3>
+      <div class="checks">
+        <div class="check"><span class="t">✓</span><span>Задача запущена<small>работа идёт на ферме</small></span></div>
+        <div class="check warn"><span class="t">!</span><span>Сборки недоступны<small>нужен готовый SDK</small></span></div>
+        <div class="check"><span class="t">✓</span><span>Можно закрыть страницу<small>работа продолжится</small></span></div>
+      </div>
+    </section>
+  </aside>
+</main>
+
 <script src="/static/new.js"></script>
 </body>
 </html>
