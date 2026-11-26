@@ -125,18 +125,29 @@ test.describe("новые страницы", () => {
 
   test("форма новой платформы: target задаёт arch", async ({ page }) => {
     await page.goto("/platform/new");
-    await expect(page.locator("#arch")).toHaveValue("mipsel_24kc");
+    await expect(page.locator("#archline")).toContainText("mipsel_24kc");
     await page.locator("#target").selectOption("ipq40xx/generic|arm_cortex-a7_neon-vfpv4");
-    await expect(page.locator("#arch")).toHaveValue("arm_cortex-a7_neon-vfpv4");
+    await expect(page.locator("#archline")).toContainText("arm_cortex-a7_neon-vfpv4");
   });
 
-  test("неверный SDK не создаёт платформу", async ({ page }) => {
+  test("источник SDK переключается: git / готовый архив", async ({ page }) => {
     await page.goto("/platform/new");
-    await page.locator("#name").fill("test-ui");
-    await page.locator("#board").fill("test");
-    await page.locator("#sdk").fill("/nope/sdk");
+    await expect(page.locator("#src-git")).toBeVisible();
+    await expect(page.locator("#create")).toHaveText("Собрать SDK");
+    await expect(page.locator("#srccost")).toContainText("4–8 часов");
+    await page.locator('#srctabs [data-src="archive"]').click();
+    await expect(page.locator("#src-archive")).toBeVisible();
+    await expect(page.locator("#src-git")).toBeHidden();
+    await expect(page.locator("#create")).toHaveText("Скачать и добавить");
+    await expect(page.locator("#urlpreview")).toContainText("downloads.openwrt.org");
+  });
+
+  test("неверное имя не запускает подготовку SDK", async ({ page }) => {
+    await page.goto("/platform/new");
+    await page.locator("#name").fill("TEST-UI");
     await page.locator("#create").click();
-    await expect(page.locator("#err")).toContainText("нет каталога SDK");
+    await expect(page.locator("#err")).toContainText("имя");
+    await expect(page.locator("#addform")).toBeVisible();
   });
 
   test("страница сборки показывает манифест и лог", async ({ page }) => {
