@@ -45,7 +45,7 @@ button.danger{color:var(--red);border-color:#FCA5A5}
 .row{display:grid;align-items:center;gap:12px;padding:9px 16px;font-size:12.5px;border-top:1px solid #F1F2F4;min-height:40px}
 .row:first-child{border-top:0}
 .row.head{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);font-weight:600;min-height:0;padding:11px 16px 9px}
-.plat{grid-template-columns:60px 90px 1fr 150px 90px 96px}
+.plat{grid-template-columns:60px 90px 1fr 150px 90px 104px}
 .pkg{grid-template-columns:24px minmax(160px,1fr) 150px 130px 90px 105px 130px}
 .bld{grid-template-columns:56px 80px 1fr 150px 215px 90px}
 .row > *{min-width:0}
@@ -123,3 +123,5 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 .upheadrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .upheadrow h3{margin:0}
 .upheadrow .mini{display:none}
+
+.pbtn{padding:5px 12px;font-size:11.5px;border-radius:8px}

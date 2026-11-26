@@ -99,7 +99,7 @@ function renderPlatforms() {
       const cls = p.name === plat ? " sel" : "";
       return `<div class="row plat clickable${cls}" data-plat="${esc(p.name)}"><span class="name">${esc(p.name)}</span><span class="mono">${esc(p.board)}</span>
         <span class="mono">${esc(p.arch)} · ${esc(p.target)}</span><span>${sdk}</span><span>${st}</span>
-        <span><button class="mini" data-gear="${esc(p.name)}">настройки</button></span></div>`;
+        <span><button class="pbtn" data-gear="${esc(p.name)}">настройки</button></span></div>`;
     })
     .join("");
   $("#platforms").innerHTML = head + rows;
