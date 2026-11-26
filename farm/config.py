@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import tomllib
 from dataclasses import dataclass
 from pathlib import Path
@@ -225,3 +226,39 @@ def save_platform(project: Path, name: str, values: dict) -> Path:
         lines.append("")
     path.write_text("\n".join(lines))
     return path
+
+
+def remove_platform(project: Path, name: str) -> None:
+    """Удалить платформу из farm.toml и её правки из platforms.local.toml."""
+    farm_file = project / "farm.toml"
+    if not farm_file.exists():
+        raise ConfigError(f"нет конфига {farm_file}")
+    text = farm_file.read_text()
+    raw = tomllib.loads(text)
+    platforms = raw.get("platforms", {})
+    if name not in platforms:
+        raise ConfigError(f"нет платформы «{name}»")
+    for fl, spec in raw.get("flavors", {}).items():
+        if spec.get("sdk_platform") == name:
+            raise ConfigError(f"платформа {name} — основная для flavor {fl}; сначала переключите flavor")
+    if len(platforms) <= 1:
+        raise ConfigError("нельзя удалить последнюю платформу")
+
+    pattern = re.compile(rf"(?ms)^\[platforms\.{re.escape(name)}\]\n.*?(?=^\[|\Z)")
+    new_text, n = pattern.subn("", text)
+    if not n:
+        raise ConfigError(f"не нашёл секцию [platforms.{name}]")
+    farm_file.write_text(new_text.rstrip() + "\n")
+
+    local = project / "platforms.local.toml"
+    if local.exists():
+        data = tomllib.loads(local.read_text())
+        if name in data.get("platforms", {}):
+            data["platforms"].pop(name)
+            lines = ["# Правки платформ из интерфейса. Поверх farm.toml; можно удалять вручную.", ""]
+            for pname, pdata in data.get("platforms", {}).items():
+                lines.append(f"[platforms.{pname}]")
+                for k, v in pdata.items():
+                    lines.append(f"{k} = {_toml_value(v)}")
+                lines.append("")
+            local.write_text("\n".join(lines))

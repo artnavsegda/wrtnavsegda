@@ -31,6 +31,7 @@ async function load() {
   $("#image_tree").value = data.image_tree;
   $("#dotconfig").value = data.config || "";
   $("#cfgpath").textContent = data.config_path ? `${data.config_path} · ${(data.config || "").split("\n").length} строк` : "нет .config";
+  $("#delname").textContent = data.name;
   renderOps();
   loadFeeds();
   loadPkgs();
@@ -166,6 +167,17 @@ $("#saveconfig").addEventListener("click", async () => {
       body: JSON.stringify({ text: $("#dotconfig").value }),
     });
     toast(r.ok ? `записан ${r.path}` : r.error);
+  } catch (e) { toast(e.message); }
+});
+
+$("#deleteplat").addEventListener("click", async () => {
+  if (!confirm(`Удалить платформу ${name}? Это правка farm.toml.`)) return;
+  try {
+    const r = await api(`/api/platform/${encodeURIComponent(name)}/delete`, {
+      method: "POST", headers: { "Content-Type": "application/json" }, body: "{}",
+    });
+    if (r.ok) location.href = "/";
+    else toast(r.error || "не удалось удалить");
   } catch (e) { toast(e.message); }
 });
 

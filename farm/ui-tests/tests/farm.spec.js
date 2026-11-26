@@ -29,6 +29,7 @@ test.describe("главная: платформы и flavor", () => {
 
     await page.locator('#flavors button[data-flavor="irz"]').click();
     await expect(page.locator('[data-plat="irm"]')).toHaveClass(/na/);
+    await expect(page.locator('[data-plat="irm"]')).toContainText("только dnxOS");
     await expect(page.locator(".row.plat.sel")).toHaveAttribute("data-plat", "r50");
   });
 
@@ -37,6 +38,7 @@ test.describe("главная: платформы и flavor", () => {
     await expect(page).toHaveURL(/\/platform\/r50$/);
     await expect(page.locator("#pname")).toContainText("r50");
     await expect(page.locator("#dotconfig")).toHaveValue(/# OpenWrt Configuration/);
+    await expect(page.locator("#deleteplat")).toBeVisible();
   });
 });
 

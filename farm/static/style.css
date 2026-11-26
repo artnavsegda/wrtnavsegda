@@ -128,3 +128,6 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 
 .row.plat.na{opacity:.5}
 .row.plat.na.clickable{cursor:default}
+
+.dangerzone{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:16px 18px;border-color:#FCA5A5}
+.dangerzone h3{margin:0 0 4px}

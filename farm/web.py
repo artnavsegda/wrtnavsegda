@@ -512,6 +512,13 @@ class App:
             return {"ok": False, "error": str(e)}
         return {"ok": proc.returncode == 0, "output": (proc.stdout + proc.stderr)[-8000:]}
 
+    def action_platform_delete(self, name: str) -> dict:
+        try:
+            config.remove_platform(config.PROJECT, name)
+        except config.ConfigError as e:
+            return {"ok": False, "error": str(e)}
+        return {"ok": True}
+
     def action_platform_paths(self, name: str, body: dict) -> dict:
         extras = body.get("extras", "")
         if isinstance(extras, str):
@@ -842,6 +849,8 @@ class Handler(BaseHTTPRequestHandler):
                         return self.json(self.app.action_platform_config(name, body))
                     if action == "op":
                         return self.json(self.app.action_platform_op(name, body))
+                    if action == "delete":
+                        return self.json(self.app.action_platform_delete(name))
                     if action == "pkg":
                         return self.json(self.app.action_platform_pkg(name, body))
             return self.error("не найдено", 404)
