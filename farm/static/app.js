@@ -279,7 +279,7 @@ function renderPackages() {
         const failed = pkgData.last_status === "failed" || pkgData.last_status === "stopped";
         state = failed ? `<span class="st mut">не собрано</span>` : `<span class="st mut">в очереди</span>`;
       } else if (p.status === "ок") {
-        state = `<span class="st ok" title="в фиде то, что собрано">ок</span>`;
+        state = `<span class="st ok" title="в фиде то, что собрано">собрано</span>`;
       } else if (p.status === "обновится") {
         state = `<span class="st warn" title="собрано, но не опубликовано">обновится</span>`;
       } else if (p.status === "новый") {
