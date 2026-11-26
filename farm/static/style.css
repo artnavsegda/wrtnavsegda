@@ -41,7 +41,7 @@ button.danger{color:var(--red);border-color:#FCA5A5}
 .block{margin-top:24px}
 .blockhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
 .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.table{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(17,24,39,.04)}
+.table{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:auto;box-shadow:0 1px 2px rgba(17,24,39,.04)}
 .row{display:grid;align-items:center;gap:12px;padding:11px 20px;font-size:13px;border-top:1px solid #F1F2F4;min-height:44px}
 .row:first-child{border-top:0}
 .row.head{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:600;min-height:0;padding:11px 16px 9px}
@@ -171,3 +171,19 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 .yellow{background:var(--amber-bg);border:1px solid #FDE68A}
 .yellow h3{margin:0 0 6px}
 .urlpreview{margin-top:8px;font-size:10px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.row.pkg{min-width:1000px}
+.row.plat{min-width:800px}
+.row.bld{min-width:760px}
+.brow{min-width:760px}
+.top{flex-wrap:wrap}
+.bar{flex-wrap:wrap;row-gap:8px}
+.side{min-width:0}
+@media (max-width:900px){
+  body{padding:16px 14px 40px}
+  .top{gap:12px}
+  .actions{justify-content:flex-start}
+  #feedstat{text-align:left}
+  .filters{flex-wrap:wrap}
+  .filters input{width:100%}
+}
