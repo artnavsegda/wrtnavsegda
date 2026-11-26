@@ -73,9 +73,13 @@ function render() {
     })
   );
 
-  $("#feedstat").textContent = cur.last_publish
-    ? `опубликован ${dt(cur.last_publish.ts)} · ${cur.last_publish.packages} пакетов`
-    : "фид ещё не публиковался";
+  if (cur.last_publish) {
+    $("#feedstat").textContent = `опубликован ${dt(cur.last_publish.ts)} · ${cur.last_publish.packages} пакетов`;
+  } else if (cur.feed_info && cur.feed_info.exists) {
+    $("#feedstat").textContent = `в фиде ${cur.feed_info.packages} пакетов (${dt(cur.feed_info.ts)}) · ферма ещё не публиковала`;
+  } else {
+    $("#feedstat").textContent = "фид пуст — ферма ещё не публиковала";
+  }
 
   renderPlatforms();
   renderUpstream();

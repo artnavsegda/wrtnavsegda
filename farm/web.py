@@ -123,6 +123,11 @@ class App:
         for f in farm.flavors.values():
             fb = state.last_build(conn, f.name)
             pub = state.last_publish(conn, f.feed)
+            index = farm.publish_root / f.feed / "Packages"
+            feed_info = {"exists": index.exists(), "packages": 0, "ts": None}
+            if index.exists():
+                feed_info["packages"] = len(_feed_index(index))
+                feed_info["ts"] = datetime.fromtimestamp(index.stat().st_mtime).astimezone().isoformat(timespec="seconds")
             flavors.append(
                 {
                     "name": f.name,
@@ -132,7 +137,8 @@ class App:
                     "sdk_platform": f.sdk_platform,
                     "last_build": _build_row(fb) if fb else None,
                     "last_publish": dict(pub) if pub else None,
-                    "feed_packages": _feed_index(farm.publish_root / f.feed / "Packages"),
+                    "feed_packages": _feed_index(index),
+                    "feed_info": feed_info,
                 }
             )
 
