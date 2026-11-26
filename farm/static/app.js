@@ -291,7 +291,7 @@ function renderPackages() {
           ? `<span class="st ok" title="в фиде то, что собрано">собрано</span>`
           : `<span class="st mut" title="пакет есть в фиде, ферма его ещё не собирала">в фиде</span>`;
       } else if (p.status === "обновится") {
-        state = `<span class="st warn" title="собрано, но не опубликовано">обновится</span>`;
+        state = `<span class="st warn" title="собрано, но в фид не попало — публикации не было">не опубликовано</span>`;
       } else if (p.status === "новый") {
         state = `<span class="st warn" title="есть в сборке, нет в фиде">новый</span>`;
       } else if (p.status === "не в фиде") {
