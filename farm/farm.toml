@@ -1,0 +1,85 @@
+# ipk farm — сборка пакетов фида halo/donyx и публикация opkg-фида.
+#
+# Модель: flavor (бренд) × platform (arch/SDK). Пакеты фида — `all`, поэтому
+# сборка идёт один раз на flavor, на SDK его основной платформы (sdk_platform);
+# платформа нужна для arch-гейта, arch-extras и opkg-конфига.
+#
+# Пути с `~` раскрываются; относительные — от каталога farm/.
+# Любой путь можно переопределить переменной окружения FARM_<ПОЛЕ> (см. config.py).
+
+[farm]
+repo = ".."                                   # рабочая копия этого репозитория
+irz_local = "~/sdk24/irz-local"               # src-link irz в feeds.conf
+buildbot = "http://buildbot.radiofid.ru/artifacts"
+channel = "DEVELOP"                           # пока только DEVELOP
+publish_root = "/var/www/html/opkg"
+farm_base = "http://192.168.245.248/opkg"
+sign_key = "~/.config/opkg-feed/key-build"
+state_dir = "~/.local/state/ipk-farm"
+jobs = 16
+
+[flavors.irz]
+brand = "irzOS"
+feed = "halo"
+packages = "scripts/feed-packages"
+sdk_platform = "r50"
+donyx = false
+
+[flavors.donyx]
+brand = "dnxOS"
+feed = "donyx"
+packages = "scripts/feed-packages-donyx"
+sdk_platform = "irm"
+donyx = true
+
+[platforms.r2]
+status = "active"
+board = "mt02"
+target = "ramips/mt7620"
+arch = "mipsel_24kc"
+release = "24.10.2"
+sdk = "~/sdk24-r2/openwrt-sdk-24.10.2-ramips-mt7620_gcc-13.3.0_musl.Linux-x86_64"
+feeds = "feeds/r2.conf"
+extras = []
+
+[platforms.r50]
+status = "active"
+board = "ipq50"
+target = "ipq40xx/generic"
+arch = "arm_cortex-a7_neon-vfpv4"
+release = "24.10.2"
+sdk = "~/sdk24-r50/openwrt-sdk-24.10.2-ipq40xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64"
+feeds = "feeds/r50.conf"
+extras = ["irz/lighttpd-mod-proxy_*.ipk"]
+
+[platforms.irm]
+status = "active"
+board = "irm"
+target = "mediatek/filogic"
+arch = "aarch64_cortex-a53"
+release = "24.10.2"
+sdk = "~/sdk24/openwrt-sdk-24.10.2-mediatek-filogic_gcc-13.3.0_musl.Linux-x86_64"
+feeds = "feeds/irm.conf"
+extras = []
+
+# Пока нет оборудования и SDK. Фид им уже подходит (пакеты all),
+# но в сборке они не участвуют.
+[platforms.wrs]
+status = "planned"
+board = "wrs"
+target = "ramips/mt7621"
+arch = "mipsel_24kc"
+release = "24.10.2"
+sdk = ""
+feeds = ""
+extras = []
+
+[platforms.x86]
+status = "planned"
+board = "x86"
+target = "x86/64"
+arch = "x86_64"
+release = "24.10.2"
+sdk = ""
+feeds = ""
+extras = []

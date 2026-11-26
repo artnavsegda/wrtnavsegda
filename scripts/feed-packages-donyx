@@ -1,0 +1,21 @@
+# Пакеты flavor «donyx»: Halo для dnxOS (iRM, Donyx M) и его модули.
+# Бренд задаётся DONYX=1 (farm.toml: [flavors.donyx]); исходник — ветка split donyx.
+# Номера выпуска общие на сборку, поэтому opkg upgrade видит новые пакеты.
+#
+# halo — оба варианта: halo (вместо aurora) и halo-preview (рядом с ней, /halo/).
+# Аврору в donyx-фид не кладём: на iRM остаётся штатная.
+
+halo
+halo-mod-console
+halo-mod-dash-clock
+halo-mod-dash-gauge
+halo-mod-dash-gps
+halo-mod-dash-hbar
+halo-mod-dash-load
+halo-mod-dash-webgl
+halo-mod-firmware
+halo-mod-software
+halo-metrics
+
+# Схема управления фидами opkg (/system/repository) — полезна и без Halo.
+opkg-repository
