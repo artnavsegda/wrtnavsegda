@@ -219,9 +219,10 @@ class App:
             if running is None:
                 return "pending"
             idx = plan[name]
-            if idx < running[0]:
+            cur = running[0] - 1
+            if idx < cur:
                 return "built"
-            if idx == running[0]:
+            if idx == cur:
                 return "building"
             return "pending"
 
@@ -242,6 +243,7 @@ class App:
                 continue
             rows.append({"name": name, "version": "", "arch": "", "depends": "", "size": 0,
                          "status": "не в фиде", "build_version": "", "build_state": state_of(name)})
+        rows.sort(key=lambda r: (plan.get(r["name"], 999), r["name"]))
         return {"feed": flavor.feed, "packages": rows, "build": build,
                 "plan": {"total": len(farm.packages(flavor)), "running": running is not None,
                          "current": running[0] if running else 0, "dir": running[2] if running else ""}}
