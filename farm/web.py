@@ -218,7 +218,7 @@ class App:
                 return "built"
             if running is None:
                 return "pending"
-            idx = plan[name]
+            idx, _ = plan[name]
             cur = running[0] - 1
             if idx < cur:
                 return "built"
@@ -227,23 +227,24 @@ class App:
             return "pending"
 
         rows, seen = [], set()
-        for p in sorted(feed, key=lambda x: (plan.get(x["name"], 999), x["name"])):
+        for p in sorted(feed, key=lambda x: (plan.get(x["name"], (999, ""))[0], x["name"])):
             b = build_pkgs.pop(p["name"], None)
             seen.add(p["name"])
             status = "ок" if not b or b["version"] == p["version"] else "обновится"
             rows.append({**p, "status": status, "build_version": b["version"] if b else "",
-                         "build_state": state_of(p["name"])})
-        for name, b in sorted(build_pkgs.items(), key=lambda kv: (plan.get(kv[0], 999), kv[0])):
+                         "build_state": state_of(p["name"]), "dir": plan.get(p["name"], (0, ""))[1]})
+        for name, b in sorted(build_pkgs.items(), key=lambda kv: (plan.get(kv[0], (999, ""))[0], kv[0])):
             seen.add(name)
             rows.append({"name": name, "version": "", "arch": b["arch"], "depends": b.get("depends", ""),
                          "size": b.get("size", 0), "status": "новый", "build_version": b["version"],
-                         "build_state": state_of(name)})
-        for name in sorted(plan, key=lambda n: (plan[n], n)):
+                         "build_state": state_of(name), "dir": plan.get(name, (0, ""))[1]})
+        for name in sorted(plan, key=lambda n: (plan[n][0], n)):
             if name in seen:
                 continue
             rows.append({"name": name, "version": "", "arch": "", "depends": "", "size": 0,
-                         "status": "не в фиде", "build_version": "", "build_state": state_of(name)})
-        rows.sort(key=lambda r: (plan.get(r["name"], 999), r["name"]))
+                         "status": "не в фиде", "build_version": "", "build_state": state_of(name),
+                         "dir": plan[name][1]})
+        rows.sort(key=lambda r: (plan.get(r["name"], (999, ""))[0], r["name"]))
         return {"feed": flavor.feed, "packages": rows, "build": build,
                 "plan": {"total": len(farm.packages(flavor)), "running": running is not None,
                          "current": running[0] if running else 0, "dir": running[2] if running else ""}}
@@ -279,8 +280,16 @@ class App:
         args = [sys.executable, str(PROJECT / "main.py"), "build", "--flavor", flavor]
         if body.get("platform"):
             args += ["--platform", str(body["platform"])]
-        for item in body.get("only", []):
-            args += ["--only", str(item)]
+        want = body.get("only") or body.get("packages") or []
+        if want:
+            plan = _plan(farm, farm.flavor(flavor))
+            dirs = []
+            for item in want:
+                d = plan.get(str(item), (0, ""))[1]
+                if d and d not in dirs:
+                    dirs.append(d)
+            if dirs:
+                args += ["--only", *dirs]
         if body.get("publish"):
             args += ["--publish"]
         log = farm.state_dir / "web-build.log"
@@ -326,13 +335,13 @@ def _makefile_packages(path: Path) -> list[str]:
     return names
 
 
-def _plan(farm, flavor) -> dict[str, int]:
-    """Пакет → индекс каталога в порядке сборки."""
-    plan: dict[str, int] = {}
+def _plan(farm, flavor) -> dict[str, tuple[int, str]]:
+    """Пакет → (индекс каталога в порядке сборки, каталог)."""
+    plan: dict[str, tuple[int, str]] = {}
     for i, d in enumerate(farm.packages(flavor)):
         names = _makefile_packages(farm.repo / d / "Makefile") or [d]
         for n in names:
-            plan[n] = i
+            plan[n] = (i, d)
     return plan
 
 

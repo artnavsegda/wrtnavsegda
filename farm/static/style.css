@@ -43,6 +43,8 @@ button.danger{color:var(--red);border-color:#FCA5A5}
 .row > *{min-width:0}
 .row .mono{font-family:var(--mono);font-size:11px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row.clickable{cursor:pointer}
+.row.sel{background:#F7FAFF;box-shadow:inset 3px 0 0 var(--blue)}
 .row .name{font-weight:500}
 .br{font-size:9px;color:var(--sub);background:#F3F4F6;border:1px solid #E9EBEF;border-radius:4px;padding:1px 4px;margin-right:5px}
 .st{font-size:11px;font-weight:600;white-space:nowrap}

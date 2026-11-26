@@ -8,6 +8,7 @@ let flavor = localStorage.getItem("farm.flavor") || "irz";
 let cfgKind = "dist";
 let logTimer = null;
 let pollTimer = null;
+const selected = new Set();
 
 async function api(path, opts) {
   const r = await fetch(path, opts);
@@ -106,6 +107,15 @@ function renderBuilds() {
   $("#builds").querySelectorAll("[data-log]").forEach((b) => b.addEventListener("click", () => openLog(b.dataset.log)));
 }
 
+function updateSelectionButton() {
+  const running = state.builds.some((b) => b.status === "running");
+  const btn = $("#rebuild");
+  if (!btn) return;
+  btn.textContent = selected.size ? `Собрать выбранные · ${selected.size}` : "Собрать выбранные";
+  btn.disabled = selected.size === 0 || running;
+  btn.title = running ? "идёт сборка — дождитесь её окончания" : "";
+}
+
 function renderPublish() {
   const b = state.builds[0];
   $("#publish").disabled = !b || b.status !== "ok" || b.published;
@@ -124,11 +134,23 @@ async function loadPackages() {
         if (p.build_state === "built") bs = `<span class="st ok">собран</span>`;
         else if (p.build_state === "building") bs = `<span class="st info"><span class="spin"></span>собирается</span>`;
         else if (p.build_state === "pending") bs = `<span class="st mut">в очереди</span>`;
-        return `<div class="row pkg"><span class="name">${esc(p.name)}</span><span class="mono">${esc(p.version || "—")}</span>
+        const sel = selected.has(p.name) ? " sel" : "";
+        const clickable = p.dir ? " clickable" : "";
+        return `<div class="row pkg${sel}${clickable}" data-name="${esc(p.name)}" data-dir="${esc(p.dir || "")}"><span class="name">${esc(p.name)}</span><span class="mono">${esc(p.version || "—")}</span>
           <span class="mono">${esc(p.arch)}</span><span>${st}</span><span>${bs}</span></div>`;
       })
       .join("");
     $("#packages").innerHTML = head + (rows || `<div class="empty">Фид пуст.</div>`);
+    $("#packages").querySelectorAll("[data-name]").forEach((row) =>
+      row.addEventListener("click", () => {
+        const name = row.dataset.name;
+        if (!row.dataset.dir) { toast(`${name}: arch-extra, собирается не из фида`); return; }
+        if (selected.has(name)) selected.delete(name); else selected.add(name);
+        row.classList.toggle("sel");
+        updateSelectionButton();
+      })
+    );
+    updateSelectionButton();
   } catch (e) {
     $("#packages").innerHTML = `<div class="empty">${esc(e.message)}</div>`;
   }
@@ -191,8 +213,9 @@ async function pull() {
   }
 }
 
-async function startBuild(publish) {
-  const body = { flavor, publish };
+async function startBuild(publish, packages = []) {
+  const body = { flavor, publish, packages };
+  selected.clear();
   toast(publish ? "сборка и публикация запущены…" : "сборка запущена…");
   try {
     await api("/api/build", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -216,6 +239,7 @@ async function publishBuild(id) {
 $("#pull").addEventListener("click", pull);
 $("#build").addEventListener("click", () => startBuild(false));
 $("#buildpublish").addEventListener("click", () => startBuild(true));
+$("#rebuild").addEventListener("click", () => startBuild(false, [...selected]));
 $("#logclose").addEventListener("click", () => { clearInterval(logTimer); $("#logdlg").close(); });
 $("#logdlg").addEventListener("close", () => clearInterval(logTimer));
 
