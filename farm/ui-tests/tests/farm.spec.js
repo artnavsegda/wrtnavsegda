@@ -125,9 +125,9 @@ test.describe("новые страницы", () => {
 
   test("форма новой платформы: target задаёт arch", async ({ page }) => {
     await page.goto("/platform/new");
+    await expect(page.locator("#arch")).toHaveValue("mipsel_24kc");
+    await page.locator("#target").selectOption("ipq40xx/generic|arm_cortex-a7_neon-vfpv4");
     await expect(page.locator("#arch")).toHaveValue("arm_cortex-a7_neon-vfpv4");
-    await page.locator("#target").selectOption("mediatek/filogic|aarch64_cortex-a53");
-    await expect(page.locator("#arch")).toHaveValue("aarch64_cortex-a53");
   });
 
   test("неверный SDK не создаёт платформу", async ({ page }) => {
