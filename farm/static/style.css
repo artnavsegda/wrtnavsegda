@@ -7,20 +7,20 @@
   --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 }
 *{box-sizing:border-box}
-body{margin:0 auto;max-width:1440px;background:var(--bg);color:var(--tx);
+body{margin:0 auto;max-width:1440px;background:#E9EBEF;color:var(--tx);
   font-family:-apple-system,BlinkMacSystemFont,"Inter","Helvetica Neue",Arial,sans-serif;
-  -webkit-font-smoothing:antialiased;padding:24px 28px 48px}
-h1{margin:0;font-size:25px;letter-spacing:-.4px}
-h2{margin:0;font-size:14.5px;font-weight:600}
+  -webkit-font-smoothing:antialiased;padding:24px 28px 56px}
+h1{margin:0;font-size:28px;letter-spacing:-.6px}
+h2{margin:0;font-size:16px;font-weight:600;letter-spacing:-.2px}
 h3{margin:0 0 8px;font-size:12px;font-weight:600}
 .sub{margin:6px 0 0;font-size:12px;color:var(--sub)}
 .muted{font-size:11px;color:var(--mut)}
-button,.button{font:inherit;font-size:12.5px;border-radius:9px;border:1px solid var(--line);background:#fff;
-  color:var(--tx);padding:8px 13px;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center}
+button,.button{font:inherit;font-size:13px;border-radius:10px;border:1px solid var(--line);background:#fff;
+  color:var(--tx);padding:9px 15px;cursor:pointer;white-space:nowrap;text-decoration:none;display:inline-flex;align-items:center}
 button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
 button:disabled{opacity:.45;cursor:default}
 button.danger{color:var(--red);border-color:#FCA5A5}
-.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-bottom:18px;border-bottom:1px solid var(--line)}
+.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-bottom:22px;border-bottom:1px solid var(--line)}
 .topact{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .topbuttons{display:flex;gap:8px;align-items:center}
 .filters{display:flex;gap:10px;align-items:center;margin:-2px 0 10px}
@@ -38,13 +38,13 @@ button.danger{color:var(--red);border-color:#FCA5A5}
 .tabs button:first-child{border-left:0}
 .tabs button.on{background:var(--blue-bg);color:var(--blue-tx);font-weight:600}
 .tabs.small button{padding:5px 10px;font-size:11px}
-.block{margin-top:18px}
-.blockhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:10px}
+.block{margin-top:24px}
+.blockhead{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px}
 .actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.table{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden}
-.row{display:grid;align-items:center;gap:12px;padding:9px 16px;font-size:12.5px;border-top:1px solid #F1F2F4;min-height:40px}
+.table{background:var(--card);border:1px solid var(--line);border-radius:16px;overflow:hidden;box-shadow:0 1px 2px rgba(17,24,39,.04)}
+.row{display:grid;align-items:center;gap:12px;padding:11px 20px;font-size:13px;border-top:1px solid #F1F2F4;min-height:44px}
 .row:first-child{border-top:0}
-.row.head{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);font-weight:600;min-height:0;padding:11px 16px 9px}
+.row.head{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);font-weight:600;min-height:0;padding:11px 16px 9px}
 .plat{grid-template-columns:60px 90px 1fr 150px 90px 104px}
 .pkg{grid-template-columns:24px minmax(150px,1fr) 140px 120px 84px 150px 88px}
 .bld{grid-template-columns:56px 80px 1fr 150px 215px 90px}
@@ -65,7 +65,7 @@ button.danger{color:var(--red);border-color:#FCA5A5}
 .split{display:grid;grid-template-columns:1fr 380px;gap:16px;align-items:start}
 .side{min-height:0}
 .side .card{display:flex;flex-direction:column;min-height:0;overflow:hidden}
-.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:0 1px 2px rgba(17,24,39,.04)}
 .commits{display:grid;gap:8px;flex:1;min-height:0;max-height:none;overflow:auto;margin-top:10px;align-content:start}
 .commit{display:grid;gap:2px;font-size:11px;color:var(--sub);border-top:1px solid #F1F2F4;padding-top:7px}
 .commit .h{font-family:var(--mono);font-size:10.5px;color:#374151}
@@ -75,7 +75,7 @@ button.danger{color:var(--red);border-color:#FCA5A5}
 .taghead{background:#E5E7EB;color:#4B5563}
 .kv{display:grid;gap:4px;font-size:11.5px;color:var(--sub)}
 .kv b{color:#374151;font-weight:600}
-.cfg{margin:10px 0 0;background:#0F172A;color:#E2E8F0;border-radius:10px;padding:12px 14px;
+.cfg{margin:12px 0 0;background:#0F172A;color:#E2E8F0;border-radius:12px;padding:14px 16px;
   font-family:var(--mono);font-size:10.5px;line-height:1.7;white-space:pre-wrap;overflow:auto;max-height:360px}
 dialog{border:1px solid var(--line);border-radius:14px;padding:0;width:min(1000px,92vw);background:var(--card)}
 dialog::backdrop{background:rgba(17,24,39,.35)}
