@@ -309,7 +309,7 @@ def _makefile_packages(path: Path) -> list[str]:
     m = re.search(r"^PKG_NAME\s*:?=\s*(\S+)", text, re.M)
     pkg = m.group(1) if m else ""
     names = []
-    for m in re.finditer(r"BuildPackage,\s*([^)\s]+)", text):
+    for m in re.finditer(r"BuildPackage,\s*(\$\(PKG_NAME\)[^,)\s]*|[\w.-]+)", text):
         name = m.group(1).replace("$(PKG_NAME)", pkg)
         if name:
             names.append(name)
