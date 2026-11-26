@@ -32,6 +32,16 @@
     </section>
 
     <section class="block">
+      <div class="blockhead"><h2>Пакеты SDK</h2><span class="muted" id="pkgstat"></span></div>
+      <div class="card">
+        <div class="feedchips" id="feedchips"></div>
+        <div class="filters"><input id="pkgq" placeholder="поиск пакета в фидах SDK" autocomplete="off"></div>
+        <div class="pkglist" id="pkglist"></div>
+        <div class="muted" style="margin-top:8px">feeds install делает пакет доступным для сборки (symlink в package/feeds). Выбор для образа — в .config.</div>
+      </div>
+    </section>
+
+    <section class="block">
       <div class="blockhead"><h2>.config</h2><span class="muted" id="cfgpath"></span></div>
       <div class="card">
         <textarea id="dotconfig" spellcheck="false" placeholder=".config появится здесь"></textarea>

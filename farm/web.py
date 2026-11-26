@@ -367,6 +367,107 @@ class App:
             "ops": ops,
         }
 
+    def _sdk_run(self, sdk: Path, cmd: list[str], timeout: int = 120):
+        env = os.environ.copy()
+        env["PATH"] = f"{sdk / 'staging_dir' / 'host' / 'bin'}:{env.get('PATH', '')}"
+        env["LC_ALL"] = "C"
+        return subprocess.run(cmd, cwd=sdk, env=env, capture_output=True, text=True, timeout=timeout)
+
+    def payload_platform_feeds(self, name: str) -> dict:
+        farm = config.load()
+        sdk = farm.platform(name).sdk
+        if not sdk or not (sdk / "scripts" / "feeds").exists():
+            return {"error": "нет SDK"}
+        proc = self._sdk_run(sdk, ["./scripts/feeds", "list", "-s"])
+        feeds = []
+        for line in proc.stdout.splitlines():
+            parts = line.split(None, 3)
+            if len(parts) < 4:
+                continue
+            fname, proto, rev, url = parts
+            installed = 0
+            fdir = sdk / "package" / "feeds" / fname
+            if fdir.exists():
+                installed = sum(1 for _ in fdir.iterdir())
+            count = 0
+            try:
+                out = self._sdk_run(sdk, ["./scripts/feeds", "list", "-r", fname], timeout=60)
+                count = sum(1 for l in out.stdout.splitlines() if l.strip())
+            except subprocess.SubprocessError:
+                pass
+            feeds.append({"name": fname, "proto": proto, "revision": rev[:9], "url": url,
+                          "packages": count, "installed": installed})
+        return {"feeds": feeds}
+
+    def payload_platform_packages(self, name: str, q: str = "") -> dict:
+        farm = config.load()
+        sdk = farm.platform(name).sdk
+        if not sdk:
+            return {"error": "нет SDK"}
+        base = sdk / "package" / "feeds"
+        rows = []
+        if q:
+            try:
+                proc = self._sdk_run(sdk, ["./scripts/feeds", "search", q], timeout=90)
+            except subprocess.SubprocessError as e:
+                return {"error": str(e)}
+            feed = ""
+            for line in proc.stdout.splitlines():
+                m = re.match(r"Search results in feed '([^']+)'", line)
+                if m:
+                    feed = m.group(1)
+                    continue
+                if not line.strip() or line.startswith("Search results"):
+                    continue
+                parts = re.split(r"\t+|\s{2,}", line.strip(), maxsplit=1)
+                pname = parts[0]
+                desc = parts[1] if len(parts) > 1 else ""
+                rows.append({"feed": feed, "name": pname, "description": desc,
+                             "installed": bool(base / feed / pname and (base / feed / pname).exists())})
+                if len(rows) >= 300:
+                    break
+        else:
+            if base.exists():
+                for feed_dir in sorted(base.iterdir()):
+                    if not feed_dir.is_dir():
+                        continue
+                    for pkg in sorted(feed_dir.iterdir()):
+                        if pkg.name.startswith("."):
+                            continue
+                        rows.append({"feed": feed_dir.name, "name": pkg.name,
+                                     "description": "", "installed": True})
+                        if len(rows) >= 300:
+                            break
+                    if len(rows) >= 300:
+                        break
+        return {"packages": rows, "query": q}
+
+    def action_platform_pkg(self, name: str, body: dict) -> dict:
+        farm = config.load()
+        sdk = farm.platform(name).sdk
+        if not sdk:
+            return {"ok": False, "error": "нет SDK"}
+        conn = state.connect(farm.state_dir)
+        busy = conn.execute("select id, flavor from builds where status='running'").fetchone()
+        if busy and farm.flavors.get(busy["flavor"]) and farm.flavors[busy["flavor"]].sdk_platform == name:
+            return {"ok": False, "error": f"идёт сборка #{busy['id']} — SDK занят"}
+        action = str(body.get("action", ""))
+        pkg = str(body.get("package", ""))
+        feed = str(body.get("feed", ""))
+        if not pkg:
+            return {"ok": False, "error": "не указан пакет"}
+        try:
+            if action == "install":
+                cmd = ["./scripts/feeds", "install"] + (["-p", feed] if feed else []) + [pkg]
+            elif action == "uninstall":
+                cmd = ["./scripts/feeds", "uninstall", pkg]
+            else:
+                return {"ok": False, "error": f"неизвестное действие {action}"}
+            proc = self._sdk_run(sdk, cmd, timeout=120)
+        except subprocess.SubprocessError as e:
+            return {"ok": False, "error": str(e)}
+        return {"ok": proc.returncode == 0, "output": (proc.stdout + proc.stderr)[-8000:]}
+
     def action_platform_paths(self, name: str, body: dict) -> dict:
         extras = body.get("extras", "")
         if isinstance(extras, str):
@@ -620,6 +721,10 @@ class Handler(BaseHTTPRequestHandler):
                     return self.json(self.app.payload_platform(name))
                 if parts[1] == "oplog":
                     return self.json(self.app.payload_oplog(name, q.get("op", [""])[0]))
+                if parts[1] == "feeds":
+                    return self.json(self.app.payload_platform_feeds(name))
+                if parts[1] == "packages":
+                    return self.json(self.app.payload_platform_packages(name, q.get("q", [""])[0]))
             if path == "/api/log":
                 return self.json(self.app.payload_pkg_log(
                     int(q.get("build", ["0"])[0]),
@@ -659,6 +764,8 @@ class Handler(BaseHTTPRequestHandler):
                         return self.json(self.app.action_platform_config(name, body))
                     if action == "op":
                         return self.json(self.app.action_platform_op(name, body))
+                    if action == "pkg":
+                        return self.json(self.app.action_platform_pkg(name, body))
             return self.error("не найдено", 404)
         except Exception as e:  # noqa: BLE001
             return self.error(f"{type(e).__name__}: {e}", 500)

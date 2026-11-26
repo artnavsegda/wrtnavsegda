@@ -32,6 +32,8 @@ async function load() {
   $("#dotconfig").value = data.config || "";
   $("#cfgpath").textContent = data.config_path ? `${data.config_path} · ${(data.config || "").split("\n").length} строк` : "нет .config";
   renderOps();
+  loadFeeds();
+  loadPkgs();
 }
 
 function renderOps() {
@@ -83,6 +85,66 @@ function poll(op) {
   tick();
   opTimer = setInterval(tick, 1500);
 }
+
+let searchTimer = null;
+
+async function loadFeeds() {
+  try {
+    const r = await api(`/api/platform/${encodeURIComponent(name)}/feeds`);
+    if (r.error) { $("#feedchips").textContent = r.error; return; }
+    $("#feedchips").innerHTML = r.feeds
+      .map((f) => `<span class="chip" title="${esc(f.url)}">${esc(f.name)} <b>${f.installed}</b>/${f.packages}</span>`)
+      .join("");
+  } catch (e) {
+    $("#feedchips").textContent = e.message;
+  }
+}
+
+async function loadPkgs(q = "") {
+  try {
+    const r = await api(`/api/platform/${encodeURIComponent(name)}/packages?q=${encodeURIComponent(q)}`);
+    if (r.error) { $("#pkglist").textContent = r.error; return; }
+    const rows = r.packages || [];
+    const shown = q ? `найдено ${rows.length}` : `в сборке: ${rows.length}${rows.length >= 300 ? " (первые 300)" : ""}`;
+    $("#pkgstat").textContent = shown;
+    $("#pkglist").innerHTML = rows.length
+      ? rows
+          .map(
+            (p) => `<div class="pkgrow"><span class="br">${esc(p.feed)}</span>
+              <span class="pname">${esc(p.name)}</span>
+              <span class="pdesc">${esc(p.description)}</span>
+              <button data-pkg="${esc(p.name)}" data-feed="${esc(p.feed)}" data-act="${p.installed ? "uninstall" : "install"}">${p.installed ? "убрать" : "в сборку"}</button></div>`
+          )
+          .join("")
+      : `<div class="empty">ничего не найдено</div>`;
+    $("#pkglist").querySelectorAll("[data-pkg]").forEach((b) =>
+      b.addEventListener("click", () => actPkg(b.dataset.act, b.dataset.pkg, b.dataset.feed))
+    );
+  } catch (e) {
+    $("#pkglist").textContent = e.message;
+  }
+}
+
+async function actPkg(action, pkg, feed) {
+  $("#pkgstat").textContent = `${action === "install" ? "ставлю" : "убираю"} ${pkg}…`;
+  try {
+    const r = await api(`/api/platform/${encodeURIComponent(name)}/pkg`, {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, package: pkg, feed }),
+    });
+    $("#pkgstat").textContent = r.ok ? (r.output || "готово").trim().split("\n").pop() : r.error || "ошибка";
+    await loadFeeds();
+    await loadPkgs($("#pkgq").value.trim());
+  } catch (e) {
+    $("#pkgstat").textContent = e.message;
+  }
+}
+
+$("#pkgq").addEventListener("input", (e) => {
+  clearTimeout(searchTimer);
+  const q = e.target.value.trim();
+  searchTimer = setTimeout(() => loadPkgs(q), 350);
+});
 
 $("#savepaths").addEventListener("click", async () => {
   try {

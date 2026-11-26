@@ -99,3 +99,14 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 .oprow button{min-width:140px;justify-content:flex-start}
 .oplog{margin:0;background:#0F172A;color:#E2E8F0;border-radius:10px;padding:10px 12px;font-family:var(--mono);font-size:10px;line-height:1.6;max-height:420px;overflow:auto;white-space:pre-wrap}
 @media (max-width:1250px){.pgrid{grid-template-columns:1fr}}
+
+.feedchips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{font-size:10.5px;border:1px solid var(--line);background:#fff;border-radius:999px;padding:3px 9px;color:var(--sub)}
+.chip b{color:#374151}
+.pkglist{display:grid;gap:0;max-height:420px;overflow:auto}
+.pkgrow{display:grid;grid-template-columns:78px minmax(140px,1fr) 1.4fr 92px;gap:10px;align-items:center;
+  padding:7px 2px;border-top:1px solid #F1F2F4;font-size:11.5px}
+.pkgrow:first-child{border-top:0}
+.pkgrow .pname{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pkgrow .pdesc{color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pkgrow button{padding:4px 9px;font-size:10.5px;border-radius:7px;justify-self:end}
