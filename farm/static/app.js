@@ -174,6 +174,10 @@ function renderControls() {
   $("#stop").title = running ? "" : "нет идущей сборки";
 }
 
+function oneButton(name, running) {
+  return `<button class="pbtn" data-one="${esc(name)}" ${running ? "disabled" : ""}>Собрать</button>`;
+}
+
 function updateSelectionButton() {
   const running = state.builds.some((b) => b.status === "running");
   const btn = $("#rebuild");
@@ -303,9 +307,7 @@ function renderPackages() {
       const sel = chosen === p.name ? " sel" : "";
       const clickable = p.dir ? " clickable" : "";
       const box = `<span class="chk"><input type="checkbox" data-chk="${esc(p.name)}" ${checked.has(p.name) ? "checked" : ""} ${p.dir ? "" : "disabled"}></span>`;
-      const one = chosen === p.name && p.dir
-        ? `<button class="pbtn" data-one="${esc(p.name)}" ${running ? "disabled" : ""}>Собрать</button>`
-        : "";
+      const one = chosen === p.name && p.dir ? oneButton(p.name, running) : "";
       return `<div class="row pkg${sel}${clickable}" data-name="${esc(p.name)}" data-dir="${esc(p.dir || "")}">${box}<span class="name">${esc(p.name)}</span><span>${src}</span><span class="mono">${esc(p.version || "—")}</span>
         <span class="mono">${esc(p.arch)}</span><span>${state}</span><span class="act">${one}</span></div>`;
     })
@@ -339,9 +341,20 @@ function renderPackages() {
   $("#packages").querySelectorAll("[data-name]").forEach((row) =>
     row.addEventListener("click", (ev) => {
       if (ev.target.tagName === "INPUT") return;
+      if (window.getSelection && window.getSelection().toString()) return;
       const name = row.dataset.name;
       chosen = chosen === name ? null : name;
-      renderPackages();
+      document.querySelectorAll("#packages .row.pkg.sel").forEach((r) => r.classList.remove("sel"));
+      document.querySelectorAll("#packages .act").forEach((a) => { a.innerHTML = ""; });
+      if (chosen) {
+        row.classList.add("sel");
+        const act = row.querySelector(".act");
+        if (act && row.dataset.dir) {
+          act.innerHTML = oneButton(name, running);
+          const b = act.querySelector("[data-one]");
+          if (b) b.addEventListener("click", (e) => { e.stopPropagation(); startBuild(true, [name]); });
+        }
+      }
       loadSource(chosen);
       updateSelectionButton();
     })
