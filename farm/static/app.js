@@ -187,7 +187,7 @@ function renderPackages() {
     return true;
   });
 
-  const head = `<div class="row head pkg"><span>Пакет</span><span>Источник</span><span>Версия в фиде</span><span>Arch</span><span>Статус</span><span>Сборка</span></div>`;
+  const head = `<div class="row head pkg"><span></span><span>Пакет</span><span>Источник</span><span>Версия в фиде</span><span>Arch</span><span>Статус</span><span>Сборка</span></div>`;
   const rows = rowsData
     .map((p) => {
       const st = p.status === "ок" ? `<span class="st ok">ок</span>` : p.status === "новый" ? `<span class="st warn">новый</span>` : `<span class="st mut">${esc(p.status)}</span>`;
