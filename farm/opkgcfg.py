@@ -43,21 +43,23 @@ def distfeeds(farm: Farm, flavor: Flavor, platform: Platform, build: BuildInfo, 
     lines += _render(active, _width(active))
 
     mirror = f"{OPENWRT_MIRROR}/{platform.release}"
-    optional = [("openwrt_core", f"{mirror}/targets/{platform.target}/packages")]
-    optional += [
+    standard = [("openwrt_core", f"{mirror}/targets/{platform.target}/packages")]
+    standard += [
         (f"openwrt_{feed}", f"{mirror}/packages/{platform.arch}/{feed}")
         for feed in ("base", "luci", "packages", "routing", "telephony")
     ]
-    for f in farm.flavors.values():
-        if f.feed != flavor.feed:
-            optional.append((f.feed, f"{farm.farm_base.rstrip('/')}/{f.feed}"))
+    others = [
+        (f.feed, f"{farm.farm_base.rstrip('/')}/{f.feed}")
+        for f in farm.flavors.values()
+        if f.feed != flavor.feed
+    ]
 
     lines.append("")
-    lines.append(f"# стандартный OpenWrt {platform.release} — если нужны пакеты не из прошивки")
-    width = _width(optional)
-    for name, url in optional:
-        comment = "  # другой бренд, не ставить вместе" if not name.startswith("openwrt_") else ""
-        lines.append("# " + f"src/gz {name:<{width}} {url}{comment}")
+    lines.append(f"# стандартный OpenWrt {platform.release}")
+    width = _width(standard + others)
+    lines += _render(standard, width)
+    for name, url in others:
+        lines.append("# " + f"src/gz {name:<{width}} {url}  # другой бренд, не ставить вместе")
     return "\n".join(lines) + "\n"
 
 

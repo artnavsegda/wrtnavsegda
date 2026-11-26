@@ -128,7 +128,8 @@ class OpkgConfigTest(unittest.TestCase):
         self.assertIn("/DEVELOP/irzOS/ipq50/250/ipk/base", text)
         self.assertIn("/DEVELOP/irzOS/ipq50/250/ipk/pkg", text)
         self.assertIn(f"{self.farm.farm_base}/halo", text)
-        self.assertIn("openwrt_telephony", text)
+        self.assertIn("src/gz openwrt_telephony", text)
+        self.assertNotIn("# src/gz openwrt_telephony", text)
         self.assertIn("# SDK: /sdk", text)
         self.assertIn("# src/gz donyx", text)
 
