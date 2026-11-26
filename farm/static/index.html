@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>ipk farm</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <h1>ipk farm</h1>
+    <p class="sub" id="repostatus">…</p>
+  </div>
+  <div class="topact">
+    <button class="pull" id="pull">↻ git pull</button>
+    <div class="muted" id="pulled">—</div>
+  </div>
+</header>
+
+<section class="bar">
+  <div class="tabs" id="flavors"></div>
+  <div class="right" id="feedstat"></div>
+</section>
+
+<main>
+  <section class="block">
+    <div class="blockhead"><h2>Платформы и флейворы</h2><span class="muted" id="platsum"></span></div>
+    <div class="table" id="platforms"></div>
+  </section>
+
+  <section class="block">
+    <div class="blockhead">
+      <h2>Пакеты <span id="feedname"></span></h2>
+      <div class="actions">
+        <button id="build">Собрать</button>
+        <button class="primary" id="buildpublish">Собрать и опубликовать</button>
+        <button id="publish" disabled>Опубликовать сборку</button>
+      </div>
+    </div>
+    <div class="split">
+      <div class="table" id="packages"></div>
+      <aside class="side">
+        <div class="card">
+          <h3>Апстрим · wrtnavsegda</h3>
+          <div class="muted" id="uptop">—</div>
+          <div class="commits" id="commits"></div>
+        </div>
+        <div class="card">
+          <h3>Последняя сборка</h3>
+          <div id="lastbuild" class="kv">—</div>
+          <div class="actions">
+            <button id="showlog" disabled>Лог</button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="blockhead">
+      <h2>Конфиг opkg</h2>
+      <div class="actions">
+        <div class="tabs small" id="cfgtabs">
+          <button data-kind="dist" class="on">distfeeds.conf</button>
+          <button data-kind="custom">customfeeds.conf</button>
+        </div>
+        <button id="copy">Копировать</button>
+        <a class="button" id="download" href="#">Скачать .conf</a>
+      </div>
+    </div>
+    <div class="muted" id="cfgmeta">—</div>
+    <pre class="cfg" id="cfg">—</pre>
+  </section>
+
+  <section class="block">
+    <div class="blockhead"><h2>История сборок</h2></div>
+    <div class="table" id="builds"></div>
+  </section>
+</main>
+
+<dialog id="logdlg">
+  <div class="blockhead"><h2 id="logtitle">Лог</h2><button id="logclose">Закрыть</button></div>
+  <pre class="log" id="log"></pre>
+</dialog>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -163,6 +163,13 @@ def cmd_logs(args) -> int:
     return 0
 
 
+def cmd_serve(args) -> int:
+    from .web import serve
+
+    serve(args.host, args.port)
+    return 0
+
+
 def _buildbot(farm, flavor, platform, refresh=False) -> buildbot.BuildInfo:
     manifest = buildbot.fetch_manifest(
         farm.buildbot, farm.state_dir / "buildbot.json", refresh=refresh
@@ -205,6 +212,11 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--build", type=int, required=True)
     s.add_argument("--dry-run", action="store_true")
     s.set_defaults(func=cmd_publish)
+
+    s = sub.add_parser("serve", help="веб-интерфейс")
+    s.add_argument("--host", default="127.0.0.1")
+    s.add_argument("--port", type=int, default=8099)
+    s.set_defaults(func=cmd_serve)
 
     s = sub.add_parser("logs", help="хвост лога сборки")
     s.add_argument("--build", type=int, required=True)
