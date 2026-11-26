@@ -6,6 +6,7 @@ import json
 import re
 import shutil
 import subprocess
+from datetime import datetime
 from pathlib import Path
 
 from . import buildbot, ipk, state
@@ -41,6 +42,14 @@ def collect(
     if not pkgdir.exists():
         raise BuildError(f"нет каталога сборки {pkgdir}")
 
+    since = 0.0
+    if build_id is not None:
+        conn0 = state.connect(farm.state_dir)
+        row0 = conn0.execute("select started from builds where id=?", (build_id,)).fetchone()
+        if row0:
+            since = datetime.fromisoformat(row0["started"]).timestamp()
+        conn0.close()
+
     files: list[tuple[Path, ipk.IpkMeta]] = []
     seen: set[str] = set()
     for f in sorted(pkgdir.glob("*.ipk")):
@@ -48,7 +57,8 @@ def collect(
             meta = ipk.read_meta(f)
         except ipk.IpkError:
             continue
-        if not meta.version.endswith(release):
+        fresh = f.stat().st_mtime >= since - 5 if since else meta.version.endswith(release)
+        if not fresh:
             continue
         if meta.name in seen:
             continue
