@@ -4,6 +4,9 @@ const mmss = (n) => { n = Math.max(0, n|0); const m = Math.floor(n/60); return m
 const dt = (s) => (s ? new Date(s).toLocaleString("ru-RU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
 
 let state = null;
+let lastSig = null;
+let lastFlavor = null;
+let pkgSig = null;
 let flavor = localStorage.getItem("farm.flavor") || "irz";
 let cfgKind = "dist";
 let logTimer = null;
@@ -21,10 +24,20 @@ async function api(path, opts) {
 async function loadState() {
   state = await api("/api/state");
   if (!state.flavors.some((f) => f.name === flavor)) flavor = state.flavors[0]?.name || "irz";
-  render();
+  const sig = JSON.stringify({
+    builds: state.builds.map((b) => [b.id, b.status, b.published, b.live ? b.live.current : 0]),
+    pubs: state.flavors.map((f) => [f.name, f.last_publish && f.last_publish.ts]),
+    up: [state.upstream.head, state.upstream.commits.length],
+    plats: state.platforms.map((p) => [p.name, p.sdk_ok]),
+    pull: state.pull && state.pull.ts,
+  });
+  if (sig !== lastSig) {
+    lastSig = sig;
+    render();
+  }
   const running = state.builds.some((b) => b.status === "running");
   clearTimeout(pollTimer);
-  pollTimer = setTimeout(loadState, running ? 3000 : 15000);
+  pollTimer = setTimeout(loadState, running ? 3000 : 30000);
 }
 
 function render() {
@@ -42,8 +55,9 @@ function render() {
     b.addEventListener("click", () => {
       flavor = b.dataset.flavor;
       localStorage.setItem("farm.flavor", flavor);
+      lastFlavor = null;
       render();
-      loadPackages();
+      loadPackages(true);
       loadConfig();
     })
   );
@@ -57,8 +71,13 @@ function render() {
   renderBuilds();
   renderControls();
   renderPublish();
-  loadPackages();
-  loadConfig();
+  if (lastFlavor !== flavor) {
+    lastFlavor = flavor;
+    loadPackages(true);
+    loadConfig();
+  } else if (state.builds.some((b) => b.status === "running")) {
+    loadPackages(false);
+  }
 }
 
 function openPlat(name) {
@@ -200,9 +219,13 @@ let pkgData = null;
 let query = "";
 let pfilter = "all";
 
-async function loadPackages() {
+async function loadPackages(force = false) {
   try {
-    pkgData = await api(`/api/packages?flavor=${encodeURIComponent(flavor)}`);
+    const data = await api(`/api/packages?flavor=${encodeURIComponent(flavor)}`);
+    const sig = JSON.stringify([data.feed, data.last_status, data.packages.map((p) => [p.name, p.version, p.build_state])]);
+    if (!force && sig === pkgSig) return;
+    pkgSig = sig;
+    pkgData = data;
     $("#feedname").textContent = `· /opkg/${pkgData.feed}`;
     renderPackages();
   } catch (e) {
@@ -340,7 +363,9 @@ async function pull() {
   try {
     const r = await api("/api/pull", { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
     toast(r.output.split("\n")[0] || "готово", !r.ok);
+    lastSig = null;
     await loadState();
+    loadConfig();
   } catch (e) {
     toast(e.message, true);
   } finally {
@@ -354,7 +379,8 @@ async function startBuild(publish, packages = []) {
   toast(publish ? "сборка и публикация запущены…" : "сборка запущена…");
   try {
     await api("/api/build", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
-    setTimeout(loadState, 1500);
+    lastSig = null;
+    setTimeout(async () => { await loadState(); await loadPackages(true); }, 1500);
   } catch (e) {
     toast(e.message, true);
   }
@@ -376,15 +402,21 @@ async function publishBuild(id) {
   try {
     const r = await api("/api/publish", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ build: id }) });
     toast(r.ok ? `опубликовано: ${r.output.split("\n").slice(-2)[0]}` : `ошибка: ${r.output}`, !r.ok);
+    lastSig = null;
+    pkgSig = null;
     await loadState();
+    await loadPackages(true);
   } catch (e) {
     toast(e.message, true);
   }
 }
 
 $("#refresh").addEventListener("click", async () => {
+  lastSig = null;
+  lastFlavor = null;
+  pkgSig = null;
   await loadState();
-  await loadPackages();
+  await loadPackages(true);
   loadConfig();
   toast("обновлено");
 });
