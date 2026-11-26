@@ -164,6 +164,6 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 .existing{display:grid;gap:10px;min-width:0}
 .ex .n{font-size:12px;font-weight:600}
 .ex{min-width:0}
-.ex .p{font-family:var(--mono);font-size:9.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.ex .p{font-family:var(--mono);font-size:9.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;max-width:100%}
 
 .side .note{margin-top:12px;line-height:1.5;color:var(--sub);font-size:11px}
