@@ -22,6 +22,14 @@ button:disabled{opacity:.45;cursor:default}
 button.danger{color:var(--red);border-color:#FCA5A5}
 .top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;padding-bottom:18px;border-bottom:1px solid var(--line)}
 .topact{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.topbuttons{display:flex;gap:8px;align-items:center}
+.filters{display:flex;gap:10px;align-items:center;margin:-2px 0 10px}
+.filters input{font:inherit;font-size:12px;border:1px solid var(--line);border-radius:9px;padding:7px 11px;width:260px;background:#fff}
+.platbody{padding:14px 16px;display:grid;gap:10px;font-size:12px}
+.platrow{display:grid;grid-template-columns:110px 1fr;gap:10px;align-items:baseline}
+.platrow .k{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);font-weight:600}
+.platrow .v{font-family:var(--mono);font-size:11px;color:#374151;word-break:break-all}
+.row.clickable{cursor:pointer}
 .pull{height:38px;padding:0 16px;font-weight:600;color:var(--blue-tx);background:var(--blue-bg);
   border:1px solid var(--blue-line);box-shadow:0 0 0 3px rgba(37,99,235,.08)}
 .bar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:16px 0 4px}

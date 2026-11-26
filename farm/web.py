@@ -111,6 +111,8 @@ class App:
                 "status": p.status,
                 "sdk": str(p.sdk or ""),
                 "sdk_ok": bool(p.sdk and p.sdk.exists()),
+                "feeds": str(p.feeds or ""),
+                "extras": list(p.extras),
             }
             for p in farm.platforms.values()
         ]
@@ -257,6 +259,7 @@ class App:
             last_lines = self.payload_pkg_log(last["id"] if last else 0, running[2], 1)["lines"]
             current = {"dir": running[2], "last": last_lines[-1].strip() if last_lines else ""}
         return {"feed": flavor.feed, "packages": rows, "build": build, "current": current,
+                "last_status": last["status"] if last else None,
                 "plan": {"total": len(farm.packages(flavor)), "running": running is not None,
                          "current": running[0] if running else 0, "dir": running[2] if running else ""}}
 

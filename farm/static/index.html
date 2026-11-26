@@ -12,7 +12,10 @@
     <p class="sub" id="repostatus">…</p>
   </div>
   <div class="topact">
-    <button class="pull" id="pull">↻ git pull</button>
+    <div class="topbuttons">
+      <button id="refresh">Обновить</button>
+      <button class="pull" id="pull">↻ git pull</button>
+    </div>
     <div class="muted" id="pulled">—</div>
   </div>
 </header>
@@ -37,6 +40,14 @@
         <button id="build">Собрать</button>
         <button class="primary" id="buildpublish">Собрать и опубликовать</button>
         <button id="publish" disabled>Опубликовать сборку</button>
+      </div>
+    </div>
+    <div class="filters">
+      <input id="q" placeholder="фильтр по имени пакета" autocomplete="off">
+      <div class="tabs small" id="pfilters">
+        <button data-f="all" class="on">все</button>
+        <button data-f="changed">изменённые</button>
+        <button data-f="new">новые</button>
       </div>
     </div>
     <div class="split">
@@ -72,6 +83,11 @@
     <div class="table" id="builds"></div>
   </section>
 </main>
+
+<dialog id="platdlg">
+  <div class="blockhead"><h2 id="plattitle">Платформа</h2><button id="platclose">Закрыть</button></div>
+  <div class="platbody" id="platbody"></div>
+</dialog>
 
 <dialog id="logdlg">
   <div class="blockhead"><h2 id="logtitle">Лог</h2><button id="logclose">Закрыть</button></div>

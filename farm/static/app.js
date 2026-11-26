@@ -60,17 +60,40 @@ function render() {
   loadConfig();
 }
 
+function openPlat(name) {
+  const p = state.platforms.find((x) => x.name === name);
+  if (!p) return;
+  $("#plattitle").textContent = `Платформа · ${p.name}`;
+  const rows = [
+    ["board", p.board],
+    ["target", p.target],
+    ["arch", p.arch],
+    ["release", p.release],
+    ["sdk", p.sdk || "—"],
+    ["feeds", p.feeds || "—"],
+    ["extras", (p.extras || []).join(", ") || "—"],
+    ["состояние", p.status + (p.sdk_ok ? " · SDK на месте" : " · SDK нет")],
+  ];
+  $("#platbody").innerHTML = rows
+    .map(([k, v]) => `<div class="platrow"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`)
+    .join("");
+  $("#platdlg").showModal();
+}
+
 function renderPlatforms() {
   const head = `<div class="row head plat"><span>Платформа</span><span>Board</span><span>Arch / target</span><span>SDK</span><span>Статус</span></div>`;
   const rows = state.platforms
     .map((p) => {
       const sdk = p.sdk_ok ? `<span class="st ok">ok</span>` : `<span class="st ${p.status === "active" ? "err" : "mut"}">${p.status === "active" ? "нет" : "planned"}</span>`;
       const st = p.status === "active" ? `<span class="st mut">active</span>` : `<span class="st mut">planned</span>`;
-      return `<div class="row plat"><span class="name">${esc(p.name)}</span><span class="mono">${esc(p.board)}</span>
+      return `<div class="row plat clickable" data-plat="${esc(p.name)}"><span class="name">${esc(p.name)}</span><span class="mono">${esc(p.board)}</span>
         <span class="mono">${esc(p.arch)} · ${esc(p.target)}</span><span>${sdk}</span><span>${st}</span></div>`;
     })
     .join("");
   $("#platforms").innerHTML = head + rows;
+  $("#platforms").querySelectorAll("[data-plat]").forEach((row) =>
+    row.addEventListener("click", () => openPlat(row.dataset.plat))
+  );
   const active = state.platforms.filter((p) => p.status === "active").length;
   $("#platsum").textContent = `${active} активных · пакеты all, сборка на flavor`;
 }
@@ -131,55 +154,76 @@ function renderPublish() {
   $("#publish").onclick = b ? () => publishBuild(b.id) : null;
 }
 
+let pkgData = null;
+let query = "";
+let pfilter = "all";
+
 async function loadPackages() {
   try {
-    const data = await api(`/api/packages?flavor=${encodeURIComponent(flavor)}`);
-    $("#feedname").textContent = `· /opkg/${data.feed}`;
-    const head = `<div class="row head pkg"><span>Пакет</span><span>Источник</span><span>Версия в фиде</span><span>Arch</span><span>Статус</span><span>Сборка</span></div>`;
-    const rows = data.packages
-      .map((p) => {
-        const st = p.status === "ок" ? `<span class="st ok">ок</span>` : p.status === "новый" ? `<span class="st warn">новый</span>` : `<span class="st mut">${esc(p.status)}</span>`;
-        let bs = `<span class="st mut">—</span>`;
-        if (p.build_state === "built") bs = `<span class="st ok">собран</span>`;
-        else if (p.build_state === "building") {
-          const bid = data.build ? data.build.id : 0;
-          bs = `<span class="st info"><span class="spin"></span>собирается<button class="mini" data-logpkg="${esc(p.dir)}" data-build="${bid}">лог</button></span>`;
-        }
-        else if (p.build_state === "pending") bs = `<span class="st mut">в очереди</span>`;
-        const sel = selected.has(p.name) ? " sel" : "";
-        const clickable = p.dir ? " clickable" : "";
-        const src = p.source && p.source.repo
-          ? `<span class="br">${esc(p.source.repo)}</span><span class="mono">${esc(p.source.commit || "")}</span>`
-          : `<span class="muted">—</span>`;
-        return `<div class="row pkg${sel}${clickable}" data-name="${esc(p.name)}" data-dir="${esc(p.dir || "")}"><span class="name">${esc(p.name)}</span><span>${src}</span><span class="mono">${esc(p.version || "—")}</span>
-          <span class="mono">${esc(p.arch)}</span><span>${st}</span><span>${bs}</span></div>`;
-      })
-      .join("");
-    $("#packages").innerHTML = head + (rows || `<div class="empty">Фид пуст.</div>`);
-    const cur = data.current;
-    if (cur && cur.last) {
-      const row = $("#packages").querySelector(`[data-dir="${cur.dir}"][data-name]`);
-      if (row) row.title = cur.last.slice(0, 300);
-    }
-    $("#packages").querySelectorAll("[data-logpkg]").forEach((b) =>
-      b.addEventListener("click", (ev) => {
-        ev.stopPropagation();
-        openPkgLog(b.dataset.build, b.dataset.logpkg);
-      })
-    );
-    $("#packages").querySelectorAll("[data-name]").forEach((row) =>
-      row.addEventListener("click", () => {
-        const name = row.dataset.name;
-        if (!row.dataset.dir) { toast(`${name}: arch-extra, собирается не из фида`); return; }
-        if (selected.has(name)) selected.delete(name); else selected.add(name);
-        row.classList.toggle("sel");
-        updateSelectionButton();
-      })
-    );
-    updateSelectionButton();
+    pkgData = await api(`/api/packages?flavor=${encodeURIComponent(flavor)}`);
+    $("#feedname").textContent = `· /opkg/${pkgData.feed}`;
+    renderPackages();
   } catch (e) {
     $("#packages").innerHTML = `<div class="empty">${esc(e.message)}</div>`;
   }
+}
+
+function renderPackages() {
+  if (!pkgData) return;
+  const q = query.trim().toLowerCase();
+  const rowsData = pkgData.packages.filter((p) => {
+    if (q && !p.name.toLowerCase().includes(q)) return false;
+    if (pfilter === "changed") return p.status === "обновится";
+    if (pfilter === "new") return p.status === "новый" || p.status === "не в фиде";
+    return true;
+  });
+
+  const head = `<div class="row head pkg"><span>Пакет</span><span>Источник</span><span>Версия в фиде</span><span>Arch</span><span>Статус</span><span>Сборка</span></div>`;
+  const rows = rowsData
+    .map((p) => {
+      const st = p.status === "ок" ? `<span class="st ok">ок</span>` : p.status === "новый" ? `<span class="st warn">новый</span>` : `<span class="st mut">${esc(p.status)}</span>`;
+      let bs = `<span class="st mut">—</span>`;
+      if (p.build_state === "built") bs = `<span class="st ok">собран</span>`;
+      else if (p.build_state === "building") {
+        const bid = pkgData.build ? pkgData.build.id : 0;
+        bs = `<span class="st info"><span class="spin"></span>собирается<button class="mini" data-logpkg="${esc(p.dir)}" data-build="${bid}">лог</button></span>`;
+      } else if (p.build_state === "pending") {
+        const failed = pkgData.last_status === "failed" || pkgData.last_status === "stopped";
+        bs = `<span class="st mut">${failed ? "не собрано" : "в очереди"}</span>`;
+      }
+      const src = p.source && p.source.repo
+        ? `<span class="br">${esc(p.source.repo)}</span><span class="mono">${esc(p.source.commit || "")}</span>`
+        : `<span class="muted">—</span>`;
+      const sel = selected.has(p.name) ? " sel" : "";
+      const clickable = p.dir ? " clickable" : "";
+      return `<div class="row pkg${sel}${clickable}" data-name="${esc(p.name)}" data-dir="${esc(p.dir || "")}"><span class="name">${esc(p.name)}</span><span>${src}</span><span class="mono">${esc(p.version || "—")}</span>
+        <span class="mono">${esc(p.arch)}</span><span>${st}</span><span>${bs}</span></div>`;
+    })
+    .join("");
+
+  $("#packages").innerHTML = head + (rows || `<div class="empty">Ничего не найдено.</div>`);
+
+  const cur = pkgData.current;
+  if (cur && cur.last) {
+    const row = $("#packages").querySelector(`[data-dir="${cur.dir}"][data-name]`);
+    if (row) row.title = cur.last.slice(0, 300);
+  }
+  $("#packages").querySelectorAll("[data-logpkg]").forEach((b) =>
+    b.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      openPkgLog(b.dataset.build, b.dataset.logpkg);
+    })
+  );
+  $("#packages").querySelectorAll("[data-name]").forEach((row) =>
+    row.addEventListener("click", () => {
+      const name = row.dataset.name;
+      if (!row.dataset.dir) { toast(`${name}: arch-extra, собирается не из фида`); return; }
+      if (selected.has(name)) selected.delete(name); else selected.add(name);
+      row.classList.toggle("sel");
+      updateSelectionButton();
+    })
+  );
+  updateSelectionButton();
 }
 
 async function loadConfig() {
@@ -281,6 +325,21 @@ async function publishBuild(id) {
   }
 }
 
+$("#refresh").addEventListener("click", async () => {
+  await loadState();
+  await loadPackages();
+  loadConfig();
+  toast("обновлено");
+});
+$("#q").addEventListener("input", (e) => { query = e.target.value; renderPackages(); });
+$("#pfilters").querySelectorAll("button").forEach((b) =>
+  b.addEventListener("click", () => {
+    pfilter = b.dataset.f;
+    $("#pfilters").querySelectorAll("button").forEach((x) => x.classList.toggle("on", x === b));
+    renderPackages();
+  })
+);
+$("#platclose").addEventListener("click", () => $("#platdlg").close());
 $("#pull").addEventListener("click", pull);
 $("#build").addEventListener("click", () => startBuild(false));
 $("#buildpublish").addEventListener("click", () => startBuild(true));
