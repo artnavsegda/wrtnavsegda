@@ -8,6 +8,7 @@ let lastSig = null;
 let lastFlavor = null;
 let pkgSig = null;
 let flavor = localStorage.getItem("farm.flavor") || "irz";
+let plat = localStorage.getItem("farm.platform") || "";
 let cfgKind = "dist";
 let logTimer = null;
 let pollTimer = null;
@@ -48,6 +49,9 @@ function render() {
     : "апстрим ещё не проверялся";
 
   const cur = state.flavors.find((f) => f.name === flavor) || state.flavors[0];
+  flavor = cur.name;
+  if (!plat || !state.platforms.some((p) => p.name === plat)) plat = cur.sdk_platform;
+  if (!plat) plat = state.platforms[0] && state.platforms[0].name;
   $("#flavors").innerHTML = state.flavors
     .map((f) => `<button data-flavor="${esc(f.name)}" class="${f.name === flavor ? "on" : ""}">${esc(f.brand)} · /opkg/${esc(f.feed)}</button>`)
     .join("");
@@ -55,6 +59,8 @@ function render() {
     b.addEventListener("click", () => {
       flavor = b.dataset.flavor;
       localStorage.setItem("farm.flavor", flavor);
+      const f = state.flavors.find((x) => x.name === flavor);
+      if (f) { plat = f.sdk_platform; localStorage.setItem("farm.platform", plat); }
       lastFlavor = null;
       render();
       loadPackages(true);
@@ -90,13 +96,24 @@ function renderPlatforms() {
     .map((p) => {
       const sdk = p.sdk_ok ? `<span class="st ok">ok</span>` : `<span class="st ${p.status === "active" ? "err" : "mut"}">${p.status === "active" ? "нет" : "planned"}</span>`;
       const st = p.status === "active" ? `<span class="st mut">active</span>` : `<span class="st mut">planned</span>`;
-      return `<div class="row plat clickable" data-plat="${esc(p.name)}"><span class="name">${esc(p.name)}</span><span class="mono">${esc(p.board)}</span>
-        <span class="mono">${esc(p.arch)} · ${esc(p.target)}</span><span>${sdk}</span><span>${st}</span></div>`;
+      const cls = p.name === plat ? " sel" : "";
+      return `<div class="row plat clickable${cls}" data-plat="${esc(p.name)}"><span class="name">${esc(p.name)}</span><span class="mono">${esc(p.board)}</span>
+        <span class="mono">${esc(p.arch)} · ${esc(p.target)}</span><span>${sdk}</span><span>${st}</span>
+        <span class="pgear" data-gear="${esc(p.name)}" title="настройки платформы">⚙</span></div>`;
     })
     .join("");
   $("#platforms").innerHTML = head + rows;
   $("#platforms").querySelectorAll("[data-plat]").forEach((row) =>
-    row.addEventListener("click", () => openPlat(row.dataset.plat))
+    row.addEventListener("click", (ev) => {
+      if (ev.target.dataset.gear) return;
+      plat = row.dataset.plat;
+      localStorage.setItem("farm.platform", plat);
+      renderPlatforms();
+      loadConfig();
+    })
+  );
+  $("#platforms").querySelectorAll("[data-gear]").forEach((g) =>
+    g.addEventListener("click", (ev) => { ev.stopPropagation(); openPlat(g.dataset.gear); })
   );
   const active = state.platforms.filter((p) => p.status === "active").length;
   $("#platsum").textContent = `${active} активных · пакеты all, сборка на flavor`;
@@ -310,7 +327,7 @@ async function loadConfig() {
   const el = $("#cfg");
   el.textContent = "…";
   try {
-    const data = await api(`/api/config?flavor=${encodeURIComponent(flavor)}&variant=${cfgKind}`);
+    const data = await api(`/api/config?flavor=${encodeURIComponent(flavor)}&platform=${encodeURIComponent(plat)}&variant=${cfgKind}`);
     if (data.error) throw new Error(data.error);
     el.textContent = data.text;
     $("#cfgmeta").textContent = `buildbot ${data.buildbot.path} · ${data.buildbot.version}`;
@@ -374,7 +391,7 @@ async function pull() {
 }
 
 async function startBuild(publish, packages = []) {
-  const body = { flavor, publish, packages };
+  const body = { flavor, platform: plat, publish, packages };
   checked.clear();
   toast(publish ? "сборка и публикация запущены…" : "сборка запущена…");
   try {

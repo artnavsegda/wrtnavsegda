@@ -66,7 +66,7 @@ class Builder:
         self.farm = farm
         self.flavor = flavor
         self.platform = platform
-        self.build_platform = farm.platform(flavor.sdk_platform)
+        self.build_platform = platform
         self.opts = opts
         self.sdk = self.build_platform.sdk
         self.release = opts.release or utc_release()

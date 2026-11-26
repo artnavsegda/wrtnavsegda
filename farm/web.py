@@ -180,9 +180,9 @@ class App:
                 )
         return {"head": head, "base": base, "commits": commits}
 
-    def _configs(self, farm, flavor_name: str) -> dict:
+    def _configs(self, farm, flavor_name: str, platform_name: str = "") -> dict:
         flavor = farm.flavors[flavor_name]
-        platform = farm.platforms[flavor.sdk_platform]
+        platform = farm.platforms[platform_name or flavor.sdk_platform]
         try:
             manifest = buildbot.fetch_manifest(
                 farm.buildbot, farm.state_dir / "buildbot.json", max_age=900
@@ -609,8 +609,9 @@ class App:
 
     def action_config(self, query: dict) -> dict:
         flavor_name = query.get("flavor", ["irz"])[0]
+        platform_name = query.get("platform", [""])[0]
         variant = query.get("variant", ["dist"])[0]
-        configs = self._configs(config.load(), flavor_name)
+        configs = self._configs(config.load(), flavor_name, platform_name)
         if "error" in configs:
             return configs
         return {"text": configs.get(variant, ""), "buildbot": configs["buildbot"]}
