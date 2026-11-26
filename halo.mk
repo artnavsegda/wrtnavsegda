@@ -47,7 +47,8 @@ PKG_RELEASE:=$(if $(FW_MAJOR),$(call calc_pkg_release,$(CURDIR),OSS),$(or $(HALO
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 PKG_SOURCE_VERSION:=$(HALO_COMMIT)
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
-PKG_MIRROR_HASH:=skip
+# PKG_MIRROR_HASH не задаём: с ним OpenWrt сначала ищет наш тарбол на
+# зеркалах (sources.openwrt.org и т.п.) и теряет минуты на 404; исходник — git.
 
 ifneq ($(HALO_SRC),)
   USE_SOURCE_DIR:=$(HALO_SRC)

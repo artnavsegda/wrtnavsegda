@@ -12,7 +12,8 @@ PKG_SOURCE_URL:=git@github.com:artnavsegda/aurora.git
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 PKG_SOURCE_VERSION:=375433ab7e4755c59b40f9ea50afbb4836ea5676
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION)-$(PKG_SOURCE_VERSION).tar.gz
-PKG_MIRROR_HASH:=skip
+# PKG_MIRROR_HASH не задаём: с ним OpenWrt сначала ищет наш тарбол на
+# зеркалах (sources.openwrt.org и т.п.) и теряет минуты на 404; исходник — git.
 
 # отладка: собрать из рабочей копии вместо коммита — AURORA_UC_SRC=<каталог> make …
 # (USE_SOURCE_DIR в командной строке подменил бы исходники и всем зависимостям)
