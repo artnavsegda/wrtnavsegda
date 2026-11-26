@@ -91,7 +91,7 @@ function openPlat(name) {
 }
 
 function renderPlatforms() {
-  const head = `<div class="row head plat"><span>Платформа</span><span>Board</span><span>Arch / target</span><span>SDK</span><span>Статус</span></div>`;
+  const head = `<div class="row head plat"><span>Платформа</span><span>Board</span><span>Arch / target</span><span>SDK</span><span>Статус</span><span></span></div>`;
   const rows = state.platforms
     .map((p) => {
       const sdk = p.sdk_ok ? `<span class="st ok">ok</span>` : `<span class="st ${p.status === "active" ? "err" : "mut"}">${p.status === "active" ? "нет" : "planned"}</span>`;
@@ -99,7 +99,7 @@ function renderPlatforms() {
       const cls = p.name === plat ? " sel" : "";
       return `<div class="row plat clickable${cls}" data-plat="${esc(p.name)}"><span class="name">${esc(p.name)}</span><span class="mono">${esc(p.board)}</span>
         <span class="mono">${esc(p.arch)} · ${esc(p.target)}</span><span>${sdk}</span><span>${st}</span>
-        <span class="pgear" data-gear="${esc(p.name)}" title="настройки платформы">⚙</span></div>`;
+        <span><button class="mini" data-gear="${esc(p.name)}">настройки</button></span></div>`;
     })
     .join("");
   $("#platforms").innerHTML = head + rows;
