@@ -135,7 +135,7 @@ async function loadPackages() {
   try {
     const data = await api(`/api/packages?flavor=${encodeURIComponent(flavor)}`);
     $("#feedname").textContent = `· /opkg/${data.feed}`;
-    const head = `<div class="row head pkg"><span>Пакет</span><span>Версия в фиде</span><span>Arch</span><span>Статус</span><span>Сборка</span></div>`;
+    const head = `<div class="row head pkg"><span>Пакет</span><span>Источник</span><span>Версия в фиде</span><span>Arch</span><span>Статус</span><span>Сборка</span></div>`;
     const rows = data.packages
       .map((p) => {
         const st = p.status === "ок" ? `<span class="st ok">ок</span>` : p.status === "новый" ? `<span class="st warn">новый</span>` : `<span class="st mut">${esc(p.status)}</span>`;
@@ -145,7 +145,10 @@ async function loadPackages() {
         else if (p.build_state === "pending") bs = `<span class="st mut">в очереди</span>`;
         const sel = selected.has(p.name) ? " sel" : "";
         const clickable = p.dir ? " clickable" : "";
-        return `<div class="row pkg${sel}${clickable}" data-name="${esc(p.name)}" data-dir="${esc(p.dir || "")}"><span class="name">${esc(p.name)}</span><span class="mono">${esc(p.version || "—")}</span>
+        const src = p.source && p.source.repo
+          ? `<span class="br">${esc(p.source.repo)}</span><span class="mono">${esc(p.source.commit || "")}</span>`
+          : `<span class="muted">—</span>`;
+        return `<div class="row pkg${sel}${clickable}" data-name="${esc(p.name)}" data-dir="${esc(p.dir || "")}"><span class="name">${esc(p.name)}</span><span>${src}</span><span class="mono">${esc(p.version || "—")}</span>
           <span class="mono">${esc(p.arch)}</span><span>${st}</span><span>${bs}</span></div>`;
       })
       .join("");

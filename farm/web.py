@@ -211,6 +211,7 @@ class App:
                 build_pkgs = {p["name"]: p for p in manifest.get("packages", [])}
 
         plan = _plan(farm, flavor)
+        sources = _source_map(farm, flavor)
         running = _last_dir_index(farm, [dict(x) for x in state.recent_builds(conn, 5)])
         done_all = last is not None and last["status"] == "ok"
 
@@ -235,12 +236,14 @@ class App:
             seen.add(p["name"])
             status = "ок" if not b or b["version"] == p["version"] else "обновится"
             rows.append({**p, "status": status, "build_version": b["version"] if b else "",
-                         "build_state": state_of(p["name"]), "dir": plan.get(p["name"], (0, ""))[1]})
+                         "build_state": state_of(p["name"]), "dir": plan.get(p["name"], (0, ""))[1],
+                         "source": sources.get(p["name"], {})})
         for name, b in sorted(build_pkgs.items(), key=lambda kv: (plan.get(kv[0], (999, ""))[0], kv[0])):
             seen.add(name)
             rows.append({"name": name, "version": "", "arch": b["arch"], "depends": b.get("depends", ""),
                          "size": b.get("size", 0), "status": "новый", "build_version": b["version"],
-                         "build_state": state_of(name), "dir": plan.get(name, (0, ""))[1]})
+                         "build_state": state_of(name), "dir": plan.get(name, (0, ""))[1],
+                         "source": sources.get(name, {})})
         for name in sorted(plan, key=lambda n: (plan[n][0], n)):
             if name in seen:
                 continue
@@ -373,6 +376,33 @@ def _plan(farm, flavor) -> dict[str, tuple[int, str]]:
         for n in names:
             plan[n] = (i, d)
     return plan
+
+
+def _source_map(farm, flavor) -> dict[str, dict]:
+    """Пакет → откуда он берётся (ветка/репозиторий и коммит из Makefile)."""
+    def pin(text: str, prefix: str) -> tuple[str, str]:
+        b = re.search(rf"^{prefix}_BRANCH\??\s*:?=\s*(\S+)", text, re.M)
+        h = re.search(rf"^{prefix}_PINNED\s*:?=\s*([0-9a-f]{{7,40}})", text, re.M)
+        return (b.group(1) if b else ""), (h.group(1)[:7] if h else "")
+
+    out: dict[str, dict] = {}
+    for d in farm.packages(flavor):
+        mk = farm.repo / d / "Makefile"
+        text = mk.read_text(errors="replace") if mk.exists() else ""
+        names = _makefile_packages(mk) or [d]
+        if "../halo.mk" in text:
+            src = pin((farm.repo / "halo.mk").read_text(errors="replace"), "HALO")
+        elif "AURORA_PINNED" in text:
+            src = pin(text, "AURORA")
+        else:
+            h = re.search(r"^PKG_SOURCE_VERSION\s*:?=\s*([0-9a-f]{7,40})", text, re.M)
+            u = re.search(r"^PKG_SOURCE_URL\s*:?=\s*(\S+)", text, re.M)
+            repo = u.group(1).rstrip("/").split("/")[-1].removesuffix(".git") if u else ""
+            src = (repo, h.group(1)[:7] if h else "")
+        info = {"repo": src[0] or "в репо", "commit": src[1]}
+        for n in names:
+            out[n] = info
+    return out
 
 
 def _last_dir_index(farm, builds) -> tuple[int, int, str] | None:
