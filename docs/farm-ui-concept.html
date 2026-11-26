@@ -1,0 +1,786 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>ipk farm — концепт</title>
+<style>
+  :root{
+    --bg:#F5F6F8; --line:#E5E7EB; --tx:#111827; --sub:#6B7280; --mut:#9CA3AF;
+    --blue:#2563EB; --blue-bg:#DBEAFE; --blue-tx:#1D4ED8;
+    --amber:#B45309; --amber-bg:#FEF3C7;
+    --green:#15803D; --green-bg:#DCFCE7;
+    --mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:#E9EBEF;color:var(--tx)}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Inter","Helvetica Neue",Arial,sans-serif;
+       -webkit-font-smoothing:antialiased;padding:24px 0 48px;display:flex;flex-direction:column;align-items:center;gap:22px}
+  .board{width:1440px;background:var(--bg);padding:28px 32px 26px}
+  .cap{display:flex;justify-content:space-between;align-items:baseline;color:#8A9099;font-size:12px;padding:0 4px}
+  .cap b{color:#4B5563;font-weight:600}
+  h1{margin:0;font-size:25px;letter-spacing:-.4px;font-weight:700}
+  .sub{margin:6px 0 0;font-size:12px;color:var(--sub)}
+  .top{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:20px;border-bottom:1px solid var(--line)}
+  .topact{display:flex;flex-direction:column;align-items:flex-end;gap:7px}
+  .pull{height:38px;padding:0 16px;font-size:13px;font-weight:600;color:var(--blue-tx);background:#EFF4FF;
+        border:1px solid #BFD3FE;border-radius:10px;display:inline-flex;align-items:center;gap:8px;
+        box-shadow:0 0 0 3px rgba(37,99,235,.08)}
+  .pull .cnt{background:var(--blue);color:#fff;border-radius:999px;font-size:10.5px;padding:2px 7px;font-weight:600}
+  .upstatus{font-size:12px;color:var(--sub);padding-top:0}
+  .upstatus b{color:var(--amber);font-weight:600}
+  .upstatus .ok{color:var(--green)}
+  button{font:inherit;border-radius:9px;border:1px solid var(--line);background:#fff;color:var(--tx);padding:8px 13px;cursor:default;white-space:nowrap;font-size:12.5px}
+  button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600}
+  button.tiny{padding:4px 10px;font-size:11px;border-radius:7px}
+  .badge{font-size:10.5px;font-weight:600;border-radius:999px;padding:3px 9px;white-space:nowrap}
+  .badge.amber{background:var(--amber-bg);color:var(--amber)}
+  .badge.blue{background:var(--blue-bg);color:var(--blue-tx)}
+  .secthead{display:flex;justify-content:space-between;align-items:baseline;margin:22px 2px 11px}
+  .secthead h2{margin:0;font-size:14.5px;font-weight:600}
+  .secthead .sum{font-size:11px;color:var(--mut)}
+  .plist{padding:0;overflow:hidden}
+  .plrow{display:grid;grid-template-columns:180px 210px 130px 1fr 220px 110px;gap:14px;align-items:center;
+         padding:9px 18px;font-size:12.5px;border-top:1px solid #F1F2F4;min-height:50px}
+  .plrow:first-child{border-top:0}
+  .plrow.head{min-height:0;padding-top:11px;padding-bottom:9px;font-size:9px;letter-spacing:.08em;
+              text-transform:uppercase;color:var(--mut);font-weight:600}
+  .plrow.sel{background:#F7FAFF;box-shadow:inset 3px 0 0 var(--blue)}
+  .plrow .pname{font-size:13.5px;font-weight:600;white-space:nowrap}
+  .plrow .parch{font-family:var(--mono);font-size:9.5px;color:var(--mut);margin-left:6px}
+  .plrow .flav{font-size:11.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .plrow .flav b{color:#374151;font-weight:600}
+  .plrow .mono{font-family:var(--mono);font-size:11px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .plrow .date{color:var(--mut);font-size:10.5px}
+  .plrow .stat{font-size:11px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .stat.amber{color:var(--amber)}
+  .stat.blue{color:var(--blue-tx)}
+  .plrow .acts{display:flex;align-items:center;gap:11px;justify-content:flex-end;font-size:10.5px}
+  .plrow .acts a{color:var(--blue-tx);text-decoration:none;font-weight:600}
+  .plrow .gear{font-size:12px;color:#9CA3AF}
+  .plrow.sel .gear{color:var(--blue-tx)}
+  .plrow.add{color:var(--mut);font-size:12px;cursor:pointer;min-height:46px}
+  .plrow.add .plus{color:var(--blue);font-size:14px}
+  .plrow.add .sub{color:var(--mut);font-size:10.5px}
+  .plrow .bar{height:4px;margin-top:5px;background:#E5E7EB}
+  .padd{display:flex;align-items:center;gap:8px;padding:11px 18px;border-top:1px dashed #D7DCE3;color:var(--mut)}
+  .padd .plus{color:var(--blue);font-size:13px}
+  .padd .t{font-size:12.5px;font-weight:600;color:var(--blue-tx)}
+  .padd .s{font-size:10.5px}
+  .bar{height:6px;background:#E5E7EB;border-radius:999px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--blue);border-radius:999px}
+
+  .dhead{display:flex;justify-content:space-between;align-items:center;margin:26px 2px 11px}
+  .dhead h2{margin:0;font-size:14.5px;font-weight:600}
+  .dhead h2 span{color:var(--mut);font-weight:400}
+  .dactions{display:flex;gap:8px}
+  .detail{display:grid;grid-template-columns:1fr 372px;gap:18px;align-items:start}
+  .card{background:#fff;border:1px solid var(--line);border-radius:14px}
+  .table{padding:0;overflow:hidden}
+  .row{display:grid;grid-template-columns:1fr 108px 96px 104px 92px 100px 150px;column-gap:12px;align-items:center;
+       padding:8px 18px;font-size:12.5px;border-top:1px solid #F1F2F4;min-height:38px}
+  .row:first-child{border-top:0}
+  .row > *{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row.head{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);font-weight:600;
+            padding-top:12px;padding-bottom:10px;min-height:0}
+  .row .mono{font-family:var(--mono);font-size:11.5px;color:#374151}
+  .pkg{font-weight:500}
+  .okmark{color:var(--green);font-size:11.5px;font-weight:500}
+  .spin{display:inline-block;width:10px;height:10px;border-radius:50%;border:1.5px solid #BFD3FE;border-top-color:var(--blue);margin-right:5px;vertical-align:-1px;animation:sp 0.9s linear infinite}
+  @keyframes sp{to{transform:rotate(360deg)}}
+  .stat.red{color:#B91C1C}
+  .loglink{color:var(--blue-tx);text-decoration:none;font-weight:600;font-size:10.5px}
+  .logbox{padding:0;overflow:hidden}
+  .logbox .lhead{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line);font-size:12px;font-weight:600}
+  .logbox .lhead .badge{margin-left:auto}
+  .logpre{margin:0;padding:14px 16px;font-family:var(--mono);font-size:10.5px;line-height:1.6;color:#374151;white-space:pre-wrap;background:#FBFCFD;max-height:520px;overflow:auto}
+  .logpre .t{color:#B0B6BF}
+  .logpre .err{color:#B91C1C}
+  .logpre .warn{color:var(--amber)}
+  .logfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 16px;border-top:1px solid var(--line);font-size:10.5px;color:var(--mut)}
+  .logpre .gap{display:block;color:var(--amber);background:#FFFBEB;border-radius:5px;padding:2px 6px;margin:4px 0}
+  .logwrap{display:grid;grid-template-columns:1fr 380px;gap:18px;margin-top:18px;align-items:start}
+  .cmdbox{background:#0F172A;color:#E2E8F0;border-radius:10px;padding:12px 14px;font-family:var(--mono);font-size:10.5px;line-height:1.7;white-space:pre-wrap;overflow-x:auto}
+  .cmdbox .c{color:#93A6C8}
+  .hintrow{font-size:10.5px;color:var(--mut);line-height:1.5;margin-top:9px}
+  .hintrow code{font-family:var(--mono);font-size:10px;background:#F3F4F6;padding:1px 4px;border-radius:3px}
+  .redbar{background:#FEF2F2;border:1px solid #FECACA;color:#991B1B;border-radius:10px;padding:10px 12px;font-size:11.5px;line-height:1.5}
+  .logwrap .side{display:grid;gap:14px}
+  .br{font-size:9px;color:var(--sub);background:#F3F4F6;border:1px solid #E9EBEF;border-radius:4px;padding:1px 4px;margin-right:5px;white-space:nowrap}
+  .stat-miss{color:var(--mut);font-size:11.5px}
+  .row.sel{background:#EAF1FF;box-shadow:inset 3px 0 0 var(--blue)}
+  .upmark{font-family:var(--mono);font-size:11px;font-weight:600;color:#fff;background:var(--blue);border-radius:5px;padding:2px 7px;width:max-content;box-shadow:0 0 0 3px rgba(37,99,235,.16)}
+  .row .act{display:flex;justify-content:flex-end;align-items:center;gap:8px}
+  .elapsed{font-family:var(--mono);font-size:10.5px;color:#374151}
+  .lastout{font-family:var(--mono);font-size:10.5px;color:var(--mut)}
+  .tag{font-size:10px;font-weight:600;color:var(--amber);background:var(--amber-bg);border-radius:5px;padding:2px 6px;margin-left:7px}
+  .tfoot{display:flex;justify-content:space-between;align-items:center;padding:9px 18px;border-top:1px solid var(--line);font-size:11px;color:var(--mut)}
+  .tfoot a{color:var(--blue);text-decoration:none}
+  .detail{align-items:start}
+  .detail > .table{align-self:start}
+  .side{display:flex;flex-direction:column;min-height:0}
+  .upcard{padding:14px 16px;display:flex;flex-direction:column;min-height:0;flex:1;overflow:hidden;position:relative}
+  .upcard h3{margin:0;font-size:12px;font-weight:600}
+  .upsub{font-size:10px;color:var(--mut);margin:4px 0 8px;line-height:1.4}
+  .upheadrow{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px}
+  .upheadrow button{flex:none}
+  .uphead{display:flex;align-items:center;gap:7px;font-size:11px;color:#374151}
+  .uphead .mono{font-family:var(--mono)}
+  .uphead .arr{color:var(--mut)}
+  .uphead .plus{margin-left:2px;font-size:10px;font-weight:600;color:var(--amber);background:var(--amber-bg);border-radius:5px;padding:1px 5px}
+  .cilist{margin-top:10px;flex:1;min-height:0;overflow-y:auto;padding-right:2px}
+  .upmore{position:sticky;top:0;background:#fff;color:var(--mut);font-size:10px;padding:2px 0 6px;margin-bottom:2px;border-bottom:1px solid #F1F2F4;text-align:center}
+  .ci{padding:8px 0;border-top:1px solid #F1F2F4}
+  .chr{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;color:#374151}
+  .chr .d{font-family:-apple-system,BlinkMacSystemFont,"Inter",sans-serif;color:var(--mut);font-size:10px}
+  .ct{margin-top:3px;font-size:11px;color:var(--sub);line-height:1.4}
+  .ci.pin{background:#EAF1FF;border-radius:8px;border-top:0;padding:8px 10px;margin-top:8px;box-shadow:inset 3px 0 0 var(--blue)}
+  .ci.pin .ct{color:var(--blue-tx)}
+  .upstrip .utitle{font-size:12px;font-weight:600}
+  .upstrip .pin{font-family:var(--mono);font-size:11px;color:#374151}
+  .upstrip .commits{display:flex;gap:8px;flex:1;min-width:0;overflow:hidden}
+  .upstrip .c{display:flex;align-items:baseline;gap:6px;background:#F7F8FA;border:1px solid #EEF0F3;border-radius:7px;padding:4px 8px;font-size:10.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:360px}
+  .upstrip .c .h{font-family:var(--mono);color:#374151}
+  .upstrip .umeta{margin-left:auto;color:var(--mut);font-size:10px;white-space:nowrap}
+  .row.sel{background:#F7FAFF}
+  .xrow{background:#F7FAFF;border-top:1px solid #E3EBFA;padding:11px 18px 13px}
+  .xhead{display:flex;align-items:center;gap:10px;font-size:11.5px}
+  .xhead b{font-weight:600}
+  .xhead .xmono{font-family:var(--mono);font-size:11px;color:#374151}
+  .xhead .xnote{color:var(--mut);font-size:10.5px}
+  .xhead button{margin-left:auto}
+  .tl{display:flex;align-items:center;margin-top:10px;font-family:var(--mono);font-size:10.5px;color:#374151}
+  .tl .node{display:flex;align-items:center;gap:6px;white-space:nowrap}
+  .tl .dot{width:7px;height:7px;border-radius:50%;background:#C7CDD6}
+  .tl .dot.built{background:#22C55E}
+  .tl .edge{width:38px;height:1px;background:#C7CDD6;margin:0 10px}
+  .tl .lbl{font-family:-apple-system,BlinkMacSystemFont,"Inter",sans-serif;color:var(--mut);font-size:10px;margin-left:2px}
+  .tl .gap{display:flex;align-items:center;gap:6px;margin:0 10px;color:var(--mut);font-size:10px;font-family:-apple-system,BlinkMacSystemFont,"Inter",sans-serif}
+  .tl .gap i{width:26px;height:1px;background:#C7CDD6}
+  .tl .gap em{font-style:normal}
+  .strip .card{padding:14px 16px}
+  .strip h3{margin:0 0 9px;font-size:12px;font-weight:600}
+  .checks.two{grid-template-columns:1fr 1fr;column-gap:18px}
+  .side .card{padding:14px 16px}
+  .side h3{margin:0 0 9px;font-size:12px;font-weight:600}
+  .checks{display:grid;gap:7px;font-size:11.5px}
+  .check{display:grid;grid-template-columns:14px 1fr;gap:7px}
+  .check .t{color:var(--green);font-weight:700;font-size:10px;padding-top:1px}
+  .check.warn .t{color:var(--amber)}
+  .check small{display:block;color:var(--mut);font-size:10px;font-family:var(--mono);margin-top:1px}
+  .up{display:grid;gap:7px}
+  .uptop{display:flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11px}
+  .uptop .plus{font-size:10px;font-weight:600;color:var(--amber);background:var(--amber-bg);border-radius:5px;padding:1px 5px}
+  .commit{font-size:10.5px;color:var(--sub);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .commit .h{font-family:var(--mono);color:#374151;margin-right:6px}
+  .opkgcfg{margin-top:18px;padding:14px 16px}
+  .cfghead{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .cfghead h3{margin:0;font-size:12px;font-weight:600}
+  .cfgactions{display:flex;gap:8px}
+  .cfgtabs{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+  .cfgtabs span{padding:5px 10px;font-size:11px;color:var(--sub);border-left:1px solid var(--line)}
+  .cfgtabs span:first-child{border-left:0}
+  .cfgtabs .on{background:#EFF4FF;color:var(--blue-tx);font-weight:600}
+  .cfgsrc{display:grid;grid-template-columns:44px 1fr;gap:4px 8px;margin-bottom:9px;font-size:10px;color:var(--mut);align-items:baseline}
+  .cfgsrc .k{font-size:9px;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
+  .cfgsrc .mono{font-family:var(--mono);font-size:10px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .cfgpre{background:#0F172A;color:#E2E8F0;border-radius:10px;padding:11px 14px;font-family:var(--mono);font-size:10.5px;line-height:1.7;white-space:pre-wrap;overflow-x:auto}
+  .cfgpre .c{color:#7C8CA6}
+  .cfgnote{margin-top:9px;font-size:10.5px;color:var(--mut);line-height:1.5}
+  .cfgnote code{font-family:var(--mono);font-size:10px;background:#F3F4F6;padding:1px 4px;border-radius:3px}
+  .footline{display:flex;justify-content:space-between;margin-top:14px;font-size:10.5px;color:var(--mut)}
+
+  .crumbs{font-size:11px;color:var(--mut);margin-bottom:10px}
+  .crumbs b{color:#4B5563;font-weight:600}
+  .form{display:grid;grid-template-columns:780px 1fr;gap:18px;margin-top:20px;align-items:start}
+  .fcard{padding:22px 24px}
+  .frow{margin-bottom:16px}
+  .label{display:block;font-size:11px;font-weight:600;color:#374151;margin-bottom:6px}
+  .input{height:40px;border:1px solid var(--line);border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 12px;font-size:13px;gap:8px}
+  .input.mono .v{font-family:var(--mono);font-size:11.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .input .right{margin-left:auto;font-size:11px;color:var(--green);font-weight:600;white-space:nowrap}
+  .hint{font-size:10.5px;color:var(--mut);margin-top:6px;line-height:1.45}
+  .select{height:40px;border:1px solid var(--line);border-radius:10px;background:#fff;display:flex;align-items:center;padding:0 12px;gap:10px;font-size:13px}
+  .select .arch{font-family:var(--mono);font-size:11px;color:var(--sub)}
+  .select .chev{margin-left:auto;color:var(--mut);font-size:11px}
+  .supported{font-family:var(--mono);font-size:10px;color:var(--mut);margin-top:6px}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
+  .seg span{padding:7px 12px;font-size:12px;color:var(--sub);border-left:1px solid var(--line)}
+  .seg span:first-child{border-left:0}
+  .seg .on{background:#EFF4FF;color:var(--blue-tx);font-weight:600}
+  .dl{border:1px solid var(--line);border-radius:10px;padding:11px 12px;margin-top:10px;display:grid;gap:8px}
+  .dl .url{font-family:var(--mono);font-size:10.5px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dlrow{display:flex;align-items:center;gap:10px}
+  .dlrow .url{flex:1;min-width:0}
+  .sel2{display:flex;align-items:center;gap:6px;font-size:11px;white-space:nowrap}
+  .sel2 .k{color:var(--mut)}
+  .sel2 .v{font-family:var(--mono);font-size:11px;color:#111827;background:#F3F4F6;border:1px solid var(--line);border-radius:7px;padding:4px 8px}
+  .dl .meta{display:flex;justify-content:space-between;font-size:10.5px;color:var(--mut)}
+  .dl .ok{color:var(--green);font-weight:600}
+  .gitnote{display:flex;gap:8px;font-size:10.5px;color:var(--sub);margin-top:10px;line-height:1.5}
+  .gitnote b{color:#374151;font-weight:600}
+  .gitnote .mono{font-family:var(--mono);font-size:10px}
+  .flavors{display:flex;gap:8px}
+  .fchip{border:1px solid var(--line);border-radius:999px;padding:6px 12px;font-size:12px;display:flex;align-items:center;gap:7px;color:var(--sub)}
+  .fchip.on{border-color:var(--blue);background:#EFF4FF;color:var(--blue-tx);font-weight:600}
+  .cbox{width:14px;height:14px;border:1.5px solid #D1D5DB;border-radius:4px}
+  .fchip.on .cbox{background:var(--blue);border-color:var(--blue);color:#fff;font-size:9px;display:flex;align-items:center;justify-content:center}
+  button.danger{color:#B91C1C;border-color:#FCA5A5}
+  .formactions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px;padding-top:15px;border-top:1px solid var(--line)}
+  .sidecard{padding:15px 17px}
+  .sidecard h3{margin:0 0 9px;font-size:12px;font-weight:600}
+  .plan{display:grid;gap:8px;font-size:11px;color:var(--sub)}
+  .plan div{display:grid;grid-template-columns:14px 1fr auto;gap:7px}
+  .plan .t{color:var(--green);font-weight:700;font-size:10px;padding-top:1px}
+  .plan .d{color:var(--mut);font-size:10px}
+  .srccost{background:var(--amber-bg);border-radius:10px;padding:11px 12px;font-size:11px;color:#78350F;line-height:1.5}
+  .srccost b{font-weight:600}
+  .existing{display:grid;gap:9px}
+  .ex .n{font-size:12px;font-weight:600}
+  .ex .p{font-family:var(--mono);font-size:9.5px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+
+  .prov{display:grid;grid-template-columns:1fr 420px;gap:18px;margin-top:20px;align-items:start}
+  .prog{padding:22px 24px}
+  .pct{display:flex;align-items:baseline;gap:10px}
+  .pct b{font-size:38px;font-weight:700;letter-spacing:-1px}
+  .pct span{font-size:12px;color:var(--sub)}
+  .pbar{height:8px;margin-top:14px}
+  .pmeta{display:flex;justify-content:space-between;font-size:11px;color:var(--mut);margin-top:8px}
+  .steps3{margin-top:20px;display:grid}
+  .s3{display:grid;grid-template-columns:18px 1fr auto;gap:9px;align-items:start;padding:9px 0;border-top:1px solid #F1F2F4;font-size:12px}
+  .s3:first-child{border-top:0}
+  .s3 .i{color:var(--green);font-weight:700;font-size:11px;padding-top:1px}
+  .s3.act .i{color:var(--blue)}
+  .s3.wait .i{color:#C7CDD6}
+  .s3 small{display:block;color:var(--mut);font-size:10px;margin-top:1px}
+  .s3 .tm{font-size:10.5px;color:var(--mut);white-space:nowrap}
+  .s3.act{background:#F7FAFF}
+  .log{padding:0;overflow:hidden}
+  .log .lhead{display:flex;align-items:center;gap:8px;padding:13px 16px;border-bottom:1px solid var(--line);font-size:12px;font-weight:600}
+  .live{width:7px;height:7px;border-radius:50%;background:#22C55E;box-shadow:0 0 0 3px #DCFCE7}
+  .lbody{padding:12px 16px;font-family:var(--mono);font-size:10.5px;color:#374151;display:grid;gap:6px;line-height:1.45}
+  .lbody .t{color:#B0B6BF}
+  .note{font-size:10.5px;color:var(--mut);line-height:1.5;margin-top:10px}
+  .provside{display:grid;gap:14px}
+</style>
+</head>
+<body>
+<div class="cap"><span><b>ipk farm</b> · концепт UI · вариант 7</span><span>черновик · 26 ноя 2026</span></div>
+
+<div class="board">
+  <div class="top">
+    <div>
+      <h1>ipk farm</h1>
+      <p class="sub">art@192.168.245.248 · Debian 13 · irzOS и dnxOS</p>
+    </div>
+    <div class="topact">
+      <button class="pull">↻ git pull</button>
+    </div>
+  </div>
+
+  <div class="secthead">
+    <h2>Платформы и флейворы</h2>
+    <span class="sum">5 активных · 2 собираются · 2 общие сборки · 1 расхождение SDK</span>
+  </div>
+
+  <section class="card plist">
+    <div class="plrow head"><span>Платформа</span><span>Флейвор</span><span>Версия</span><span>Из</span><span>Статус</span><span></span></div>
+
+    <div class="plrow">
+      <span><span class="pname">R2</span><span class="parch">mipsel_24kc</span></span>
+      <span class="flav"><b>IRZ</b></span>
+      <span class="mono">r2611191108</span>
+      <span class="mono">split f5b35b8 · <span class="date">19 ноя</span></span>
+      <span class="stat amber">отстаёт · +1</span>
+      <span class="acts"><span class="gear">⚙</span></span>
+    </div>
+
+    <div class="plrow sel">
+      <span><span class="pname">R50</span><span class="parch">arm_cortex-a7</span></span>
+      <span class="flav"><b>IRZ</b></span>
+      <span class="mono">r2611191108</span>
+      <span class="mono">split f5b35b8 · <span class="date">19 ноя</span></span>
+      <span class="stat amber">отстаёт · +1</span>
+      <span class="acts"><span class="gear">⚙</span></span>
+    </div>
+
+    <div class="plrow">
+      <span><span class="pname">R2</span><span class="parch">mipsel_24kc</span></span>
+      <span class="flav"><b>Donyx</b></span>
+      <span class="mono">r2611250544</span>
+      <span class="mono">13×f5b35b8 + 1×91c5ea8 · <span class="date">25 ноя</span></span>
+      <span class="stat blue">смешанный</span>
+      <span class="acts"><span class="gear">⚙</span></span>
+    </div>
+
+    <div class="plrow">
+      <span><span class="pname">R50</span><span class="parch">arm_cortex-a7</span></span>
+      <span class="flav"><b>Donyx</b></span>
+      <span class="mono">r2611250544</span>
+      <span class="mono">13×f5b35b8 + 1×91c5ea8 · <span class="date">25 ноя</span></span>
+      <span class="stat blue">смешанный</span>
+      <span class="acts"><span class="gear">⚙</span></span>
+    </div>
+
+    <div class="plrow">
+      <span><span class="pname">iRM</span><span class="parch">aarch64</span></span>
+      <span class="flav"><b>Donyx</b></span>
+      <span class="mono">r2611250544</span>
+      <span class="mono">SDK ipq40xx (arm) · <span class="date">25 ноя</span></span>
+      <span class="stat amber">SDK не тот</span>
+      <span class="acts"><span class="gear">⚙</span></span>
+    </div>
+
+    <div class="plrow">
+      <span><span class="pname">wRS</span><span class="parch">mipsel_24kc</span></span>
+      <span class="flav"><b>Donyx</b> · исходники · devel-v24</span>
+      <span><span class="mono">62%</span><span class="bar"><i style="width:62%"></i></span></span>
+      <span class="mono">клон ветки · <span class="date">начато 10:26</span></span>
+      <span class="stat blue">собирается · ~2 ч 20 м</span>
+      <span class="acts"><a href="#">лог</a><span class="gear">⚙</span></span>
+    </div>
+
+    <div class="plrow">
+      <span><span class="pname">x86</span><span class="parch">x86_64</span></span>
+      <span class="flav"><b>IRZ</b> · исходники · openwrt-24.10</span>
+      <span><span class="mono">28%</span><span class="bar"><i style="width:28%"></i></span></span>
+      <span class="mono">клон ветки · <span class="date">начато 11:40</span></span>
+      <span class="stat blue">собирается · ~5 ч</span>
+      <span class="acts"><a href="#">лог</a><span class="gear">⚙</span></span>
+    </div>
+
+    <div class="padd">
+      <span class="plus">＋</span>
+      <span class="t">Добавить платформу</span>
+      <span class="s">архитектура из списка · SDK: готовый архив или исходники из Git, ветка = версия платформы</span>
+    </div>
+  </section>
+
+  <div class="dhead">
+    <h2>R50 · IRZ <span>— пакеты</span></h2>
+    <div class="dactions">
+      <button>Пересобрать всё</button>
+      <button class="primary">Собрать все новые · 1</button>
+    </div>
+  </div>
+
+  <div class="detail">
+    <div class="card table">
+      <div class="row head"><span>Пакет</span><span>Версия</span><span>Arch</span><span>Источник</span><span>Опубликован</span><span>Статус</span><span></span></div>
+      <div class="row"><span class="pkg">halo</span><span class="mono">0.1-r2611191108</span><span class="mono">all</span><span><span class="br">split</span><span class="mono">12f3f2f</span></span><span>19 ноя 14:10</span><span><span class="okmark">ок</span></span><span class="act"></span></div>
+      <div class="row"><span class="pkg">halo-preview</span><span class="mono">0.1-r2611191108</span><span class="mono">all</span><span><span class="br">split</span><span class="mono">12f3f2f</span></span><span>19 ноя 14:10</span><span><span class="okmark">ок</span></span><span class="act"></span></div>
+      <div class="row"><span class="pkg">halo-mod-console</span><span class="mono">0.1-r2611191108</span><span class="mono">all</span><span><span class="br">split</span><span class="mono">12f3f2f</span></span><span>19 ноя 14:11</span><span><span class="stat blue"><span class="spin"></span>собирается</span></span><span class="act"><span class="elapsed">1:42</span><span class="lastout">+12с</span><a class="loglink" href="#">лог →</a></span></div>
+      <div class="row"><span class="pkg">halo-mod-dash-clock</span><span class="mono">0.1-r2611191108</span><span class="mono">all</span><span><span class="br">split</span><span class="mono">12f3f2f</span></span><span>19 ноя 14:12</span><span><span class="okmark">ок</span></span><span class="act"></span></div>
+      <div class="row"><span class="pkg">halo-mod-dash-gauge</span><span class="mono">0.1-r2611191108</span><span class="mono">all</span><span><span class="br">split</span><span class="mono">12f3f2f</span></span><span>19 ноя 14:12</span><span><span class="okmark">ок</span></span><span class="act"></span></div>
+      <div class="row"><span class="pkg">halo-mod-dash-gps</span><span class="mono">0.1-r2611191108</span><span class="mono">all</span><span><span class="br">split</span><span class="mono">12f3f2f</span></span><span>19 ноя 14:13</span><span><span class="stat red">ошибка</span></span><span class="act"><a class="loglink" href="#">лог →</a></span></div>
+      <div class="row"><span class="pkg">halo-mod-dash-hbar</span><span class="mono">0.1-r2611191108</span><span class="mono">all</span><span><span class="br">split</span><span class="mono">12f3f2f</span></span><span>19 ноя 14:13</span><span><span class="okmark">ок</span></span><span class="act"></span></div>
+      <div class="row"><span class="pkg">halo-mod-dash-load</span><span class="mono">0.1-r2611191108</span><span class="mono">all</span><span><span class="br">split</span><span class="mono">12f3f2f</span></span><span>19 ноя 14:13</span><span><span class="okmark">ок</span></span><span class="act"></span></div>
+      <div class="row"><span class="pkg">halo-mod-firmware</span><span class="mono">0.1-r2611191108</span><span class="mono">all</span><span><span class="br">split</span><span class="mono">12f3f2f</span></span><span>19 ноя 14:14</span><span><span class="okmark">ок</span></span><span class="act"></span></div>
+      <div class="row sel"><span class="pkg">halo-mod-software</span><span class="mono">0.1-r2611191108</span><span class="mono">all</span><span><span class="br">split</span><span class="mono">12f3f2f</span></span><span>19 ноя 14:14</span><span><span class="okmark">ок</span></span><span class="act"><button class="tiny">Пересобрать</button></span></div>
+      <div class="row"><span class="pkg">halo-mod-torrent</span><span class="mono">—</span><span class="mono">all</span><span><span class="br">split</span><span class="mono">12f3f2f</span></span><span>—</span><span class="stat-miss">не собран</span><span class="act"><button class="primary tiny">Собрать</button></span></div>
+      <div class="row"><span class="pkg">halo-metrics</span><span class="mono">0.1-r2611191108</span><span class="mono">all</span><span><span class="br">split</span><span class="mono">12f3f2f</span></span><span>19 ноя 14:15</span><span><span class="okmark">ок</span></span><span class="act"></span></div>
+      <div class="row"><span class="pkg">halo-metrics-collectd</span><span class="mono">0.1-r2611191108</span><span class="mono">all</span><span><span class="br">split</span><span class="mono">12f3f2f</span></span><span>19 ноя 14:15</span><span><span class="okmark">ок</span></span><span class="act"></span></div>
+      <div class="row"><span class="pkg">opkg-repository</span><span class="mono">0.1-r3</span><span class="mono">all</span><span><span class="br">в репо</span></span><span>17 ноя 14:28</span><span><span class="okmark">ок</span></span><span class="act"></span></div>
+      <div class="row"><span class="pkg">horizon-uc</span><span class="mono">0.1-r1</span><span class="mono">all</span><span><span class="br">master</span><span class="mono">5fd22df</span></span><span>17 ноя 14:29</span><span><span class="okmark">ок</span></span><span class="act"></span></div>
+      <div class="row"><span class="pkg">zenith-uc</span><span class="mono">0.1-r1</span><span class="mono">all</span><span><span class="br">master</span><span class="mono">5fd22df</span></span><span>17 ноя 14:29</span><span><span class="okmark">ок</span></span><span class="act"></span></div>
+      <div class="row"><span class="pkg">aurora</span><span class="mono">1.3-r2611191110</span><span class="mono">all</span><span><span class="br">master</span><span class="mono">3f7c1d2</span></span><span>19 ноя 14:10</span><span><span class="okmark">ок</span></span><span class="act"></span></div>
+      <div class="row"><span class="pkg">aurora-uc</span><span class="mono">0.1-r1</span><span class="mono">all</span><span><span class="br">master</span><span class="mono">8b5e0a4</span></span><span>17 ноя 14:29</span><span><span class="okmark">ок</span></span><span class="act"></span></div>
+      <div class="row"><span class="pkg">lighttpd-mod-proxy <span class="tag">arch-extra</span></span><span class="mono">1.4.85-r1</span><span class="mono">arm_cortex-a7</span><span><span class="br">irz</span><span class="mono">1.4.85</span></span><span>12 ноя 13:43</span><span><span class="okmark">ок</span></span><span class="act"></span></div>
+      <div class="tfoot"><span>18 пакетов · 1 не собран</span><span>индекс подписан 19 ноя 14:15</span></div>
+    </div>
+    <div class="side">
+      <section class="card upcard">
+        <div class="upheadrow">
+          <h3>Апстрим · wrtnavsegda</h3>
+        </div>
+        <div class="upsub">ветка master · git pull тянет только упаковку · код пакетов — при сборке</div>
+        <div class="uphead"><span class="mono">f5b35b8</span><span class="arr">→</span><span class="mono">a8ed370</span><span class="plus">28 коммитов</span></div>
+        <div class="cilist">
+          <div class="upmore">↑ выше ещё 4 коммита</div>
+          <div class="ci">
+            <div class="chr"><span class="h">a8ed370</span><span class="d">26 ноя</span></div>
+            <div class="ct">halo-mod-torrent: пакет модуля torrent (transmission-daemon)</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">91c5ea8</span><span class="d">25 ноя</span></div>
+            <div class="ct">halo-mod-torrent: карточка дашборда в том же пакете</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">4c1f7e2</span><span class="d">24 ноя</span></div>
+            <div class="ct">halo: точка GPS Donyx на карте</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">0d7ab31</span><span class="d">24 ноя</span></div>
+            <div class="ct">halo-mod-firmware: ссылка на сборки dnxOS</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">8f2c1a0</span><span class="d">23 ноя</span></div>
+            <div class="ct">runtime: bits-ui и svelte-table в одном чанке</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">3b9e4d1</span><span class="d">22 ноя</span></div>
+            <div class="ct">halo-mod-software: установка из фида по имени</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">e71c5b2</span><span class="d">21 ноя</span></div>
+            <div class="ct">halo-mod-dash-gps: подписи координат</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">6a0d9f3</span><span class="d">20 ноя</span></div>
+            <div class="ct">halo: SSL-конфиг для dnxOS</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">c52b1e8</span><span class="d">19 ноя</span></div>
+            <div class="ct">halo-mod-console: WebSocket на lo</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">1f4e6a7</span><span class="d">18 ноя</span></div>
+            <div class="ct">halo-metrics: collectd-плагин</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">b6f3a21</span><span class="d">17 ноя</span></div>
+            <div class="ct">halo: шаблон lighttpd для замены aurora</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">d29c4e0</span><span class="d">16 ноя</span></div>
+            <div class="ct">halo-mod-dash-load: шкала загрузки CPU</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">f04b8c1</span><span class="d">15 ноя</span></div>
+            <div class="ct">halo-mod-console: сеанс ssh через ttyd</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">a17e9d3</span><span class="d">14 ноя</span></div>
+            <div class="ct">halo-mod-software: подтверждение списка обновлений</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">e58d2b6</span><span class="d">13 ноя</span></div>
+            <div class="ct">horizon-uc: CONFLICTS horizont</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">c93a7f4</span><span class="d">12 ноя</span></div>
+            <div class="ct">halo-mod-firmware: проверка образа платы</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">7d21b0e</span><span class="d">11 ноя</span></div>
+            <div class="ct">opkg-repository: схема /system/repository</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">2e64f9a</span><span class="d">10 ноя</span></div>
+            <div class="ct">halo: точка GPS на карте Donyx</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">5f0b3c2</span><span class="d">09 ноя</span></div>
+            <div class="ct">halo-mod-dash-hbar: горизонтальная шкала</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">8c1d7a4</span><span class="d">08 ноя</span></div>
+            <div class="ct">halo-mod-dash-clock: часовой пояс из uci</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">b2e6f1d</span><span class="d">07 ноя</span></div>
+            <div class="ct">halo-mod-software: удаление пакетов</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">e93a4c8</span><span class="d">06 ноя</span></div>
+            <div class="ct">horizon-uc: совместимый с zenith print</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">1a7d5f9</span><span class="d">05 ноя</span></div>
+            <div class="ct">halo: init.d для lighttpd</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">6d2b8e3</span><span class="d">04 ноя</span></div>
+            <div class="ct">halo-mod-firmware: sysupgrade без DNS</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">f57c1a0</span><span class="d">03 ноя</span></div>
+            <div class="ct">halo-metrics: буфер collectd</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">03e9b62</span><span class="d">02 ноя</span></div>
+            <div class="ct">opkg-repository: подпись фида</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">ac4d8f1</span><span class="d">01 ноя</span></div>
+            <div class="ct">halo-mod-console: ttyd на localhost</div>
+          </div>
+          <div class="ci">
+            <div class="chr"><span class="h">7b2e0d5</span><span class="d">31 окт</span></div>
+            <div class="ct">halo: сборка Vite с gzip</div>
+          </div>
+          <div class="ci pin">
+            <div class="chr"><span class="h">f5b35b8</span><span class="d">19 ноя</span></div>
+            <div class="ct">пин сборки · halo-mod-software собран здесь</div>
+          </div>
+        </div>
+        <div class="note">фиды pkg/oss не двигались · проверено 12:40 · <a href="#" style="color:var(--blue-tx);text-decoration:none;font-weight:600">вся ветка →</a></div>
+      </section>
+    </div>
+  </div>
+
+
+  <section class="card opkgcfg">
+    <div class="cfghead">
+      <h3>Конфиг opkg · R50 · IRZ</h3>
+      <div class="cfgactions">
+        <div class="cfgtabs"><span class="on">distfeeds.conf</span><span>customfeeds.conf</span></div>
+        <button class="tiny">Обновить из buildbot</button>
+        <button class="tiny">Копировать</button>
+        <button class="tiny">Скачать .conf</button>
+      </div>
+    </div>
+    <div class="cfgsrc">
+      <span class="k">SDK</span><span class="mono">~/sdk24-r50/openwrt-sdk-24.10.2-ipq40xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64</span>
+      <span class="k">база</span><span class="mono">http://192.168.245.248/opkg</span>
+      <span class="k">buildbot</span><span class="mono">DEVELOP/irzOS/ipq50/250 · 0.1.1051-devel · собран 26 ноя 12:26</span>
+    </div>
+    <div class="cfgpre"><span class="c"># irzOS 0.1.1051-devel · ipq40xx/generic · arm_cortex-a7_neon-vfpv4 · OpenWrt 24.10.2</span>
+<span class="c"># SDK: ~/sdk24-r50/openwrt-sdk-24.10.2-ipq40xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64</span>
+<span class="c"># buildbot: http://buildbot.radiofid.ru/artifacts/DEVELOP/irzOS/ipq50/250</span>
+src/gz kernel    http://buildbot.radiofid.ru/artifacts/DEVELOP/irzOS/ipq50/250/ipk/kernel
+src/gz base      http://buildbot.radiofid.ru/artifacts/DEVELOP/irzOS/ipq50/250/ipk/base
+src/gz packages  http://buildbot.radiofid.ru/artifacts/DEVELOP/irzOS/ipq50/250/ipk/pkg
+src/gz oss       http://buildbot.radiofid.ru/artifacts/DEVELOP/irzOS/ipq50/250/ipk/oss
+src/gz wrt       http://buildbot.radiofid.ru/artifacts/DEVELOP/irzOS/ipq50/250/ipk/wrt
+src/gz halo      http://192.168.245.248/opkg/halo
+
+<span class="c"># стандартный OpenWrt 24.10.2 — если нужны пакеты не из прошивки</span>
+<span class="c"># src/gz openwrt_core      https://downloads.openwrt.org/releases/24.10.2/targets/ipq40xx/generic/packages</span>
+<span class="c"># src/gz openwrt_base      https://downloads.openwrt.org/releases/24.10.2/packages/arm_cortex-a7_neon-vfpv4/base</span>
+<span class="c"># src/gz openwrt_luci      https://downloads.openwrt.org/releases/24.10.2/packages/arm_cortex-a7_neon-vfpv4/luci</span>
+<span class="c"># src/gz openwrt_packages  https://downloads.openwrt.org/releases/24.10.2/packages/arm_cortex-a7_neon-vfpv4/packages</span>
+<span class="c"># src/gz openwrt_routing   https://downloads.openwrt.org/releases/24.10.2/packages/arm_cortex-a7_neon-vfpv4/routing</span>
+<span class="c"># src/gz openwrt_telephony https://downloads.openwrt.org/releases/24.10.2/packages/arm_cortex-a7_neon-vfpv4/telephony</span>
+<span class="c"># src/gz donyx             http://192.168.245.248/opkg/donyx  # другой бренд, не ставить вместе</span></div>
+    <div class="cfgnote">distfeeds.conf — полный, вместо сломанного в прошивке; customfeeds.conf — только наш фид. <b>Номер 250 — сегодняшний:</b> ночью buildbot выпустит 251, и пути сменятся. После sysupgrade с сохранением настроек конфиг останется на старой сборке — обнови его кнопкой «Обновить из buildbot». Ключ <b>9C2A…41F0</b> уже в <code>/etc/opkg/keys</code>.</div>
+  </section>
+
+  <div class="footline">
+    <span>один пакет ~40 с · полная сборка ~5 м 40 с · каждый пакет собирается из своего коммита</span>
+    <span>логи и история — в отдельной вкладке</span>
+  </div>
+</div>
+
+<div class="cap"><span><b>Добавление платформы</b> · шаг 1</span><span>архитектура из списка, источник SDK на выбор</span></div>
+
+<div class="board">
+  <div class="crumbs">Платформы <b>→ Добавить</b></div>
+  <h1>Новая платформа</h1>
+  <p class="sub">Имя, архитектура и источник SDK. Архитектура выбирается из поддерживаемых — вручную не вводится.</p>
+
+  <div class="form">
+    <section class="card fcard">
+      <div class="frow">
+        <label class="label">Имя платформы</label>
+        <div class="input"><span>wRS</span></div>
+        <div class="hint">Короткое имя, как в документации: R2, R50, iRM, wRS</div>
+      </div>
+
+      <div class="frow">
+        <label class="label">Архитектура</label>
+        <div class="select">
+          <span>ramips / mt7621</span>
+          <span class="arch">mipsel_24kc</span>
+          <span class="chev">▾</span>
+        </div>
+        <div class="hint">Обязательное поле. Список — поддерживаемые таргеты OpenWrt 24.10.2:</div>
+        <div class="supported">ramips/mt7620 · ramips/mt7621 · ipq40xx/generic · mediatek/filogic · x86/64</div>
+      </div>
+
+      <div class="frow">
+        <label class="label">Источник SDK</label>
+        <div class="seg">
+          <span class="on">Исходники из Git</span>
+          <span>Готовый архив</span>
+        </div>
+
+        <div class="dl">
+          <div class="dlrow">
+            <div class="url">https://git.openwrt.org/openwrt/openwrt.git</div>
+            <div class="sel2"><span class="k">ветка</span><span class="v">devel-v24 ▾</span></div>
+          </div>
+          <div class="meta"><span>клон shallow · коммит фиксируется в манифесте</span><span class="ok">→ OpenWrt 24.10.2</span></div>
+        </div>
+
+        <div class="hint">Ветка задаёт версию платформы. Для iRZ/Donyx — тот же механизм, но репозиторий адаптации с патчами: <span class="mono" style="font-family:var(--mono);font-size:10px">git@gitlab.radiofid.ru:Routers/Developing/clean/openwrt.git</span>.</div>
+        <div class="hint">Или готовый архив: SDK того же таргета скачивается с downloads.openwrt.org за 2–3 минуты, без сборки.</div>
+      </div>
+
+      <div class="frow">
+        <label class="label">Флейворы</label>
+        <div class="flavors">
+          <span class="fchip"><span class="cbox"></span>IRZ</span>
+          <span class="fchip on"><span class="cbox">✓</span>Donyx</span>
+        </div>
+        <div class="hint">wRS выпускается только с dnxOS; IRZ можно включить позже.</div>
+      </div>
+
+      <div class="formactions">
+        <button>Отмена</button>
+        <button class="primary">Собрать SDK</button>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="card sidecard">
+        <h3>Что будет сделано</h3>
+        <div class="plan">
+          <div><span class="t">1</span><span>Клонировать ветку devel-v24</span><span class="d">~4 мин</span></div>
+          <div><span class="t">2</span><span>feeds update и install</span><span class="d">~9 мин</span></div>
+          <div><span class="t">3</span><span>toolchain</span><span class="d">~1,5 ч</span></div>
+          <div><span class="t">4</span><span>Сборка SDK</span><span class="d">~3 ч</span></div>
+          <div><span class="t">5</span><span>Проверить target и arch</span><span class="d">сек</span></div>
+        </div>
+        <div class="note">Если target или arch не совпадут с выбранной архитектурой — платформа не создаётся, а в логе будет причина.</div>
+      </section>
+
+      <section class="card sidecard">
+        <h3>Долгая сборка</h3>
+        <div class="srccost">
+          <b>≈4–8 часов</b> для исходников из Git. Идёт на ферме в фоне: платформа появляется в списке сразу со статусом «собирается», страницу можно закрыть. Альтернатива — готовый архив SDK: 2–3 минуты.
+        </div>
+      </section>
+
+      <section class="card sidecard">
+        <h3>Уже добавлены</h3>
+        <div class="existing">
+          <div class="ex"><div class="n">R2 · mipsel_24kc</div><div class="p">~/sdk24-r2/openwrt-sdk-24.10.2-ramips-mt7620…</div></div>
+          <div class="ex"><div class="n">R50 · arm_cortex-a7</div><div class="p">~/sdk24-r50/openwrt-sdk-24.10.2-ipq40xx-generic…</div></div>
+          <div class="ex"><div class="n">iRM · aarch64</div><div class="p">~/sdk24/openwrt-sdk-24.10.2-mediatek-filogic…</div></div>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<div class="cap"><span><b>Добавление платформы</b> · шаг 2 · долгая сборка</span><span>тот же экран после «Из исходников → Собрать SDK»</span></div>
+
+<div class="board">
+  <div class="crumbs">Платформы <b>→ wRS</b></div>
+  <h1>wRS · SDK собирается</h1>
+  <p class="sub">ramips/mt7621 · mipsel_24kc · ветка devel-v24 → OpenWrt 24.10.2 · начато 10:26</p>
+
+  <div class="prov">
+    <section class="card prog">
+      <div class="pct"><b>62%</b><span>2 ч 14 м из ~6 ч · осталось ~2 ч 20 м</span></div>
+      <div class="bar pbar"><i style="width:62%"></i></div>
+      <div class="pmeta"><span>toolchain: сборка gcc/musl</span><span>шаг 3 из 5</span></div>
+
+      <div class="steps3">
+        <div class="s3"><span class="i">✓</span><span>Ветка devel-v24<small>клон с git.openwrt.org · коммит 4f1c02a</small></span><span class="tm">4 мин</span></div>
+        <div class="s3"><span class="i">✓</span><span>feeds update и install<small>base, packages, luci, routing, telephony</small></span><span class="tm">9 мин</span></div>
+        <div class="s3 act"><span class="i">▸</span><span>toolchain<small>gcc 13.3.0 · musl · идёт</small></span><span class="tm">1 ч 40 м</span></div>
+        <div class="s3 wait"><span class="i">·</span><span>Сборка SDK<small>пакеты и staging</small></span><span class="tm">~3 ч</span></div>
+        <div class="s3 wait"><span class="i">·</span><span>Проверка target и arch<small>scripts/feeds, .config</small></span><span class="tm">сек</span></div>
+      </div>
+
+      <div class="note">Можно закрыть страницу: сборка идёт на ферме. Платформа уже видна в списке со статусом «SDK готовится», а сборки ipk для неё появятся, когда SDK будет готов. Прервать — кнопкой «Отменить», тогда каталог SDK удаляется.</div>
+    </section>
+
+    <aside class="provside">
+      <section class="card log">
+        <div class="lhead"><span class="live"></span>Лог сборки</div>
+        <div class="lbody">
+          <div><span class="t">12:31:07</span> make toolchain/compile -j16</div>
+          <div><span class="t">12:34:19</span> gcc: stage2 ok</div>
+          <div><span class="t">12:38:02</span> musl: headers ok</div>
+          <div><span class="t">12:40:41</span> gcc: stage3 (libgcc, libstdc++)</div>
+          <div><span class="t">12:40:42</span> [ 62%] building target libs…</div>
+        </div>
+      </section>
+      <section class="card sidecard">
+        <h3>Пока идёт</h3>
+        <div class="checks">
+          <div class="check"><span class="t">✓</span><span>Платформа добавлена<small>в списке — «собирается»</small></span></div>
+          <div class="check warn"><span class="t">!</span><span>Сборки ipk недоступны<small>нужен готовый SDK</small></span></div>
+          <div class="check"><span class="t">✓</span><span>Можно закрыть страницу<small>работа продолжится на ферме</small></span></div>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button>Открыть лог</button>
+          <button class="danger">Отменить сборку</button>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<div class="cap"><span><b>Лог сборки</b> · ошибка, диагностика, ручной запуск</span><span>открывается по «лог →» у пакета</span></div>
+
+<div class="board">
+  <div class="crumbs">Пакеты <b>→ halo-mod-dash-gps → лог</b></div>
+  <h1>halo-mod-dash-gps · сборка не прошла</h1>
+  <p class="sub">R50 · IRZ · build #185 · 12:41:02 — 12:53:11 · 12 минут без вывода, упало по таймауту</p>
+
+  <div class="logwrap">
+    <section class="card logbox">
+      <div class="lhead">Лог · compile<span class="badge" style="background:#FEE2E2;color:#B91C1C">ошибка</span><a href="#" style="margin-left:auto;color:var(--blue-tx);text-decoration:none;font-weight:600;font-size:10.5px">полный лог →</a></div>
+      <pre class="logpre"><span class="t">12:41:02</span> make package/feeds/halo/halo-mod-dash-gps/compile V=s
+<span class="t">12:41:03</span> Collecting package info: done
+<span class="t">12:41:05</span> make[3]: Entering directory '.../feeds/halo/halo-mod-dash-gps'
+<span class="t">12:41:06</span> Downloading https://github.com/transmission/transmission/releases/download/4.0.6/transmission-4.0.6.tar.xz
+<span class="gap">нет вывода с 12:41:06 · +12:04</span>
+<span class="t">12:53:10</span> -- connection timed out; no answer
+<span class="t">12:53:11</span> <span class="err">make[3]: *** No rule to make target '.../dl/transmission-4.0.6.tar.xz'</span>
+<span class="t">12:53:11</span> <span class="err">make[2]: *** [package/Makefile:188: package/feeds/halo/halo-mod-dash-gps/compile] Error 2</span>
+<span class="t">12:53:11</span> <span class="err">make[1]: *** [package/Makefile:175: .../halo-mod-dash-gps/compile] Error 2</span></pre>
+      <div class="logfoot"><span>последняя строка 12:41:06 · <b style="color:#374151">+12:04</b></span><button class="tiny">Остановить</button></div>
+    </section>
+
+    <aside class="side">
+      <section class="card" style="padding:14px 16px">
+        <h3>Что произошло</h3>
+        <div class="redbar">Не скачался тарбол <b>transmission-4.0.6.tar.xz</b>: сборка ждала ответа github.com 12 минут и упала по таймауту.</div>
+        <div class="hintrow">Похоже, с фермы нет доступа к <code>github.com</code> или виноват прокси. Проверить: <code>curl -I https://github.com</code>.</div>
+      </section>
+
+      <section class="card" style="padding:14px 16px">
+        <h3>Если непонятно — запустить вручную</h3>
+        <div class="cmdbox">ssh art@192.168.245.248
+cd ~/sdk24-r50/openwrt-sdk-24.10.2-ipq40xx-generic_gcc-13.3.0_musl_eabi.Linux-x86_64
+make package/feeds/halo/halo-mod-dash-gps/compile V=s</div>
+        <div class="hintrow">Полный лог: <code>logs/package/feeds/halo/halo-mod-dash-gps/compile.txt</code>. Зависший процесс: <code>pkill -f transmission-4.0.6</code>.</div>
+      </section>
+
+      <section class="card" style="padding:14px 16px">
+        <h3>Действия</h3>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button>Открыть полный лог</button>
+          <button class="danger">Остановить сборку</button>
+          <button class="primary">Пересобрать</button>
+        </div>
+      </section>
+    </aside>
+  </div>
+</div>
+
+<script>
+  const fit = () => {
+    const s = Math.min(1, (window.innerWidth - 24) / 1440);
+    document.querySelectorAll('.board').forEach(b => { b.style.zoom = s; });
+    document.querySelectorAll('.cap').forEach(c => { c.style.width = (1440 * s) + 'px'; });
+  };
+  fit(); addEventListener('resize', fit);
+  const fitList = () => {
+    const card = document.querySelector('.upcard');
+    const list = document.querySelector('.cilist');
+    const more = document.querySelector('.upmore');
+    if (!card || !list) return;
+    const note = card.querySelector('.note');
+    const table = document.querySelector('.table');
+    if (table) card.style.maxHeight = table.offsetHeight + 'px';
+    const avail = card.clientHeight - list.offsetTop - (note ? note.offsetHeight + 14 : 0) - 14;
+    if (avail > 140) list.style.maxHeight = avail + 'px';
+    list.scrollTop = list.scrollHeight;
+    if (more) {
+      const hidden = Array.from(list.querySelectorAll('.ci'))
+        .filter(el => el.offsetTop + el.offsetHeight <= list.scrollTop + 2).length;
+      more.textContent = hidden ? '↑ выше ещё ' + hidden + (hidden === 1 ? ' коммит' : (hidden < 5 ? ' коммита' : ' коммитов')) : '';
+      more.style.display = hidden ? 'block' : 'none';
+    }
+  };
+  requestAnimationFrame(() => requestAnimationFrame(fitList));
+  addEventListener('load', fitList);
+  addEventListener('resize', fitList);
+</script>
+</body>
+</html>
