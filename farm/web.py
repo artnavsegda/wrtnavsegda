@@ -250,11 +250,19 @@ class App:
 
     def payload_log(self, build_id: int) -> dict:
         farm = config.load()
-        path = farm.builds_dir / str(build_id) / "build.log"
+        base = farm.builds_dir / str(build_id)
+        path = base / "build.log"
         if not path.exists():
             return {"lines": [], "exists": False}
-        text = path.read_text(errors="replace").splitlines()
-        return {"lines": text[-MAX_LOG:], "exists": True, "size": path.stat().st_size}
+        lines = path.read_text(errors="replace").splitlines()[-MAX_LOG:]
+        pkgdir = base / "logs"
+        if pkgdir.exists():
+            logs = sorted(pkgdir.glob("*.log"), key=lambda p: p.stat().st_mtime)
+            if logs:
+                cur = logs[-1]
+                tail = cur.read_text(errors="replace").splitlines()[-120:]
+                lines += ["", f"--- {cur.name} ---"] + tail
+        return {"lines": lines, "exists": True, "size": path.stat().st_size}
 
     # ---------- действия ----------
 
@@ -359,7 +367,6 @@ def _live_progress(farm, build: dict) -> dict:
         pass
     if not path.exists():
         return out
-    out["idle"] = max(0, int(time.time() - path.stat().st_mtime))
     try:
         lines = path.read_text(errors="replace").splitlines()[-200:]
     except OSError:
@@ -369,6 +376,13 @@ def _live_progress(farm, build: dict) -> dict:
         if m:
             out.update(current=int(m.group(1)), total=int(m.group(2)), package=m.group(3))
             break
+    # вывод пакета идёт в logs/<каталог>.log, build.log молчит всё время сборки
+    stamp = path
+    if out["package"]:
+        pkg_log = path.parent / "logs" / f"{out['package']}.log"
+        if pkg_log.exists():
+            stamp = pkg_log
+    out["idle"] = max(0, int(time.time() - stamp.stat().st_mtime))
     return out
 
 
