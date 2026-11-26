@@ -53,7 +53,7 @@ function render() {
   renderPlatforms();
   renderUpstream();
   renderBuilds();
-  renderLastBuild(cur);
+  renderPublish();
   loadPackages();
   loadConfig();
 }
@@ -76,11 +76,11 @@ function renderPlatforms() {
 function renderUpstream() {
   const up = state.upstream;
   $("#uptop").textContent = up.base
-    ? `${up.base.slice(0, 9)} → ${up.head.slice(0, 9)} · ${up.commits.length} коммитов`
+    ? `HEAD ${up.head.slice(0, 9)} · сборка из ${up.base.slice(0, 9)} · ${up.commits.length} коммитов`
     : `HEAD ${up.head.slice(0, 9)} · опубликованной сборки ещё нет`;
   $("#commits").innerHTML = up.commits.length
     ? up.commits
-        .map((c) => `<div class="commit"><span class="h">${esc(c.hash)}</span><span>${esc(c.date)} · ${esc(c.subject)}</span></div>`)
+        .map((c) => `<div class="commit${c.published ? " cur" : ""}"><span class="h">${esc(c.hash)}${c.published ? ' <span class="tagpub">в фиде</span>' : ""}${c.head ? ' <span class="taghead">HEAD</span>' : ""}</span><span>${esc(c.date)} · ${esc(c.subject)}</span></div>`)
         .join("")
     : `<div class="empty">Нет новых коммитов после опубликованной сборки.</div>`;
 }
@@ -106,22 +106,10 @@ function renderBuilds() {
   $("#builds").querySelectorAll("[data-log]").forEach((b) => b.addEventListener("click", () => openLog(b.dataset.log)));
 }
 
-function renderLastBuild(cur) {
-  const b = cur.last_build;
-  const l = b ? ((state.builds.find((x) => x.id === b.id) || {}).live || null) : null;
-  const pct = l && l.total ? Math.round(((l.current - 1) / l.total) * 100) : 0;
-  $("#lastbuild").innerHTML = b
-    ? `<div>сборка <b>#${b.id}</b> · <b>${esc(b.status)}</b></div>
-       <div>начата ${dt(b.started)} · release <b>${esc(b.release || "—")}</b></div>
-       ${l ? `<div>${esc(l.package || "…")} · ${l.current}/${l.total} · ${mmss(l.elapsed)} · вывод ${l.idle}с назад</div>
-              <div class="progress"><i style="width:${pct}%"></i></div>` : ""}
-       <div>${b.published ? "опубликована" : "не опубликована"}</div>`
-    : "сборок ещё нет";
-  $("#showlog").disabled = !b;
-  $("#showlog").onclick = b ? () => openLog(b.id) : null;
+function renderPublish() {
+  const b = state.builds[0];
   $("#publish").disabled = !b || b.status !== "ok" || b.published;
   $("#publish").onclick = b ? () => publishBuild(b.id) : null;
-  if (b && b.status === "running") openLog(b.id, false);
 }
 
 async function loadPackages() {
@@ -131,9 +119,13 @@ async function loadPackages() {
     const head = `<div class="row head pkg"><span>Пакет</span><span>Версия в фиде</span><span>Arch</span><span>Статус</span><span>Сборка</span></div>`;
     const rows = data.packages
       .map((p) => {
-        const st = p.status === "ок" ? `<span class="st ok">ок</span>` : p.status === "новый" ? `<span class="st warn">новый</span>` : `<span class="st warn">${esc(p.status)}</span>`;
-        return `<div class="row pkg"><span class="name">${esc(p.name)}</span><span class="mono">${esc(p.version)}</span>
-          <span class="mono">${esc(p.arch)}</span><span>${st}</span><span class="mono">${esc(p.build_version || "—")}</span></div>`;
+        const st = p.status === "ок" ? `<span class="st ok">ок</span>` : p.status === "новый" ? `<span class="st warn">новый</span>` : `<span class="st mut">${esc(p.status)}</span>`;
+        let bs = `<span class="st mut">—</span>`;
+        if (p.build_state === "built") bs = `<span class="st ok">собран</span>`;
+        else if (p.build_state === "building") bs = `<span class="st info"><span class="spin"></span>собирается</span>`;
+        else if (p.build_state === "pending") bs = `<span class="st mut">в очереди</span>`;
+        return `<div class="row pkg"><span class="name">${esc(p.name)}</span><span class="mono">${esc(p.version || "—")}</span>
+          <span class="mono">${esc(p.arch)}</span><span>${st}</span><span>${bs}</span></div>`;
       })
       .join("");
     $("#packages").innerHTML = head + (rows || `<div class="empty">Фид пуст.</div>`);

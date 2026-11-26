@@ -157,13 +157,20 @@ class App:
                 if row and row["manifest"]:
                     base = json.loads(row["manifest"]).get("refs", {}).get("repo_head", "")
                     break
+        out = _git(repo, "log", "-60", "--date=short", "--format=%h\t%ad\t%s")
         commits = []
-        if base and base != head:
-            out = _git(repo, "log", f"{base}..{head}", "--date=short", "--format=%h\t%ad\t%s")
-            for line in out.splitlines():
-                parts = line.split("\t", 2)
-                if len(parts) == 3:
-                    commits.append({"hash": parts[0], "date": parts[1], "subject": parts[2]})
+        for line in out.splitlines():
+            parts = line.split("\t", 2)
+            if len(parts) == 3:
+                commits.append(
+                    {
+                        "hash": parts[0],
+                        "date": parts[1],
+                        "subject": parts[2],
+                        "published": bool(base) and base.startswith(parts[0]),
+                        "head": parts[0] == head[:7],
+                    }
+                )
         return {"head": head, "base": base, "commits": commits}
 
     def _configs(self, farm, flavor_name: str) -> dict:
@@ -200,26 +207,44 @@ class App:
                 build = {**build, "refs": manifest.get("refs", {}), "buildbot": manifest.get("buildbot", {})}
                 build_pkgs = {p["name"]: p for p in manifest.get("packages", [])}
 
-        rows = []
-        for p in sorted(feed, key=lambda x: x["name"]):
+        plan = _plan(farm, flavor)
+        running = _last_dir_index(farm, [dict(x) for x in state.recent_builds(conn, 5)])
+        done_all = last is not None and last["status"] == "ok"
+
+        def state_of(name: str) -> str:
+            if name not in plan:
+                return ""
+            if done_all:
+                return "built"
+            if running is None:
+                return "pending"
+            idx = plan[name]
+            if idx < running[0]:
+                return "built"
+            if idx == running[0]:
+                return "building"
+            return "pending"
+
+        rows, seen = [], set()
+        for p in sorted(feed, key=lambda x: (plan.get(x["name"], 999), x["name"])):
             b = build_pkgs.pop(p["name"], None)
-            status = "ок"
-            if b and b["version"] != p["version"]:
-                status = "обновится"
-            rows.append({**p, "status": status, "build_version": b["version"] if b else ""})
-        for name, b in sorted(build_pkgs.items()):
-            rows.append(
-                {
-                    "name": name,
-                    "version": b["version"],
-                    "arch": b["arch"],
-                    "depends": b.get("depends", ""),
-                    "size": b.get("size", 0),
-                    "status": "новый",
-                    "build_version": b["version"],
-                }
-            )
-        return {"feed": flavor.feed, "packages": rows, "build": build}
+            seen.add(p["name"])
+            status = "ок" if not b or b["version"] == p["version"] else "обновится"
+            rows.append({**p, "status": status, "build_version": b["version"] if b else "",
+                         "build_state": state_of(p["name"])})
+        for name, b in sorted(build_pkgs.items(), key=lambda kv: (plan.get(kv[0], 999), kv[0])):
+            seen.add(name)
+            rows.append({"name": name, "version": "", "arch": b["arch"], "depends": b.get("depends", ""),
+                         "size": b.get("size", 0), "status": "новый", "build_version": b["version"],
+                         "build_state": state_of(name)})
+        for name in sorted(plan, key=lambda n: (plan[n], n)):
+            if name in seen:
+                continue
+            rows.append({"name": name, "version": "", "arch": "", "depends": "", "size": 0,
+                         "status": "не в фиде", "build_version": "", "build_state": state_of(name)})
+        return {"feed": flavor.feed, "packages": rows, "build": build,
+                "plan": {"total": len(farm.packages(flavor)), "running": running is not None,
+                         "current": running[0] if running else 0, "dir": running[2] if running else ""}}
 
     def payload_log(self, build_id: int) -> dict:
         farm = config.load()
@@ -275,6 +300,51 @@ class App:
 
 def data_flavor(body: dict) -> str:
     return str(body.get("flavor") or "irz")
+
+
+def _makefile_packages(path: Path) -> list[str]:
+    if not path.exists():
+        return []
+    text = path.read_text(errors="replace")
+    m = re.search(r"^PKG_NAME\s*:?=\s*(\S+)", text, re.M)
+    pkg = m.group(1) if m else ""
+    names = []
+    for m in re.finditer(r"BuildPackage,\s*([^)\s]+)", text):
+        name = m.group(1).replace("$(PKG_NAME)", pkg)
+        if name:
+            names.append(name)
+    return names
+
+
+def _plan(farm, flavor) -> dict[str, int]:
+    """Пакет → индекс каталога в порядке сборки."""
+    plan: dict[str, int] = {}
+    for i, d in enumerate(farm.packages(flavor)):
+        names = _makefile_packages(farm.repo / d / "Makefile") or [d]
+        for n in names:
+            plan[n] = i
+    return plan
+
+
+def _last_dir_index(farm, builds) -> tuple[int, int, str] | None:
+    """Последний [i/n] dir из лога последней сборки (running или упавшей)."""
+    for b in builds:
+        if b["status"] == "ok":
+            return None
+        if b["status"] not in ("running", "failed"):
+            continue
+        path = farm.builds_dir / str(b["id"]) / "build.log"
+        if not path.exists():
+            continue
+        try:
+            lines = path.read_text(errors="replace").splitlines()[-300:]
+        except OSError:
+            continue
+        for line in reversed(lines):
+            m = re.search(r"\[(\d+)/(\d+)\] (\S+)", line)
+            if m:
+                return int(m.group(1)), int(m.group(2)), m.group(3)
+    return None
 
 
 def _live_progress(farm, build: dict) -> dict:
