@@ -44,10 +44,10 @@ def _publish(farm, manifest, dest: Path, src: Path, sdk: Path, key: Path, pub: P
     violations = [
         f"{p['name']}: {p['version']} < опубликованной {old[p['name']]}"
         for p in packages
-        if p["name"] in old and not ipk.newer(p["version"], old[p["name"]])
+        if p["name"] in old and ipk.compare(p["version"], old[p["name"]]) < 0
     ]
     if violations:
-        raise BuildError("версии не растут: " + "; ".join(violations))
+        raise BuildError("версии откатываются назад: " + "; ".join(violations))
 
     if dry_run:
         return {"feed": dest.name, "packages": len(packages), "dry_run": True}

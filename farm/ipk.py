@@ -124,3 +124,8 @@ def _tokens(s: str) -> tuple:
 
 def newer(new: str, old: str) -> bool:
     return version_key(new) > version_key(old)
+
+
+def compare(new: str, old: str) -> int:
+    a, b = version_key(new), version_key(old)
+    return 0 if a == b else (1 if a > b else -1)
