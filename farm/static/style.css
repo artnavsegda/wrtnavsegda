@@ -46,7 +46,7 @@ button.danger{color:var(--red);border-color:#FCA5A5}
 .row:first-child{border-top:0}
 .row.head{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);font-weight:600;min-height:0;padding:11px 16px 9px}
 .plat{grid-template-columns:60px 90px 1fr 150px 90px 104px}
-.pkg{grid-template-columns:24px minmax(150px,1fr) 140px 120px 84px 95px 110px 88px}
+.pkg{grid-template-columns:24px minmax(150px,1fr) 140px 120px 84px 150px 88px}
 .bld{grid-template-columns:56px 80px 1fr 150px 215px 90px}
 .row > *{min-width:0}
 .row .mono{font-family:var(--mono);font-size:11px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

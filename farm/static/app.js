@@ -268,18 +268,28 @@ function renderPackages() {
     return true;
   });
 
-  const head = `<div class="row head pkg"><span></span><span>Пакет</span><span>Источник</span><span>Версия в фиде</span><span>Arch</span><span>Статус</span><span>Сборка</span><span></span></div>`;
+  const head = `<div class="row head pkg"><span></span><span>Пакет</span><span>Источник</span><span>Версия в фиде</span><span>Arch</span><span>Состояние</span><span></span></div>`;
   const rows = rowsData
     .map((p) => {
-      const st = p.status === "ок" ? `<span class="st ok">ок</span>` : p.status === "новый" ? `<span class="st warn">новый</span>` : `<span class="st mut">${esc(p.status)}</span>`;
-      let bs = `<span class="st mut">—</span>`;
-      if (p.build_state === "built") bs = `<span class="st ok">собран</span>`;
-      else if (p.build_state === "building") {
+      let state;
+      if (p.build_state === "building") {
         const bid = pkgData.build ? pkgData.build.id : 0;
-        bs = `<span class="st info"><span class="spin"></span>собирается<button class="mini" data-logpkg="${esc(p.dir)}" data-build="${bid}">лог</button></span>`;
+        state = `<span class="st info"><span class="spin"></span>собирается<button class="mini" data-logpkg="${esc(p.dir)}" data-build="${bid}">лог</button></span>`;
       } else if (p.build_state === "pending") {
         const failed = pkgData.last_status === "failed" || pkgData.last_status === "stopped";
-        bs = `<span class="st mut">${failed ? "не собрано" : "в очереди"}</span>`;
+        state = failed ? `<span class="st mut">не собрано</span>` : `<span class="st mut">в очереди</span>`;
+      } else if (p.status === "ок") {
+        state = `<span class="st ok" title="в фиде то, что собрано">ок</span>`;
+      } else if (p.status === "обновится") {
+        state = `<span class="st warn" title="собрано, но не опубликовано">обновится</span>`;
+      } else if (p.status === "новый") {
+        state = `<span class="st warn" title="есть в сборке, нет в фиде">новый</span>`;
+      } else if (p.status === "не в фиде") {
+        state = `<span class="st mut" title="в плане сборки, но не собрано">не в фиде</span>`;
+      } else if (p.status === "не в сборке") {
+        state = `<span class="st mut" title="пакет репозитория вне списка feed-packages">не в сборке</span>`;
+      } else {
+        state = `<span class="st mut">—</span>`;
       }
       const src = p.source && p.source.repo
         ? `<span class="br">${esc(p.source.repo)}</span><span class="mono">${esc(p.source.commit || "")}</span>`
@@ -291,7 +301,7 @@ function renderPackages() {
         ? `<button class="pbtn" data-one="${esc(p.name)}" ${running ? "disabled" : ""}>Собрать</button>`
         : "";
       return `<div class="row pkg${sel}${clickable}" data-name="${esc(p.name)}" data-dir="${esc(p.dir || "")}">${box}<span class="name">${esc(p.name)}</span><span>${src}</span><span class="mono">${esc(p.version || "—")}</span>
-        <span class="mono">${esc(p.arch)}</span><span>${st}</span><span>${bs}</span><span class="act">${one}</span></div>`;
+        <span class="mono">${esc(p.arch)}</span><span>${state}</span><span class="act">${one}</span></div>`;
     })
     .join("");
 
