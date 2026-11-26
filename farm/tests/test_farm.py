@@ -14,22 +14,32 @@ from farm.publish import _index_versions
 
 
 def make_ipk(path: Path, name: str, version: str, arch: str = "all", depends: str = "") -> None:
+    """OpenWrt ipk: gzip tar с debian-binary, control.tar.gz и data.tar.gz."""
     control = (
         f"Package: {name}\nVersion: {version}\nArchitecture: {arch}\n"
         f"Depends: {depends}\nDescription: test\n"
     ).encode()
-    tar = io.BytesIO()
-    with tarfile.open(fileobj=tar, mode="w:gz") as tf:
-        info = tarfile.TarInfo("./control")
-        info.size = len(control)
-        tf.addfile(info, io.BytesIO(control))
-    body = tar.getvalue()
 
-    def entry(aname: str, data: bytes) -> bytes:
-        header = f"{aname:<16}{'0':<12}{'0':<6}{'0':<6}{'100644':<8}{len(data):<10}`\n".encode()
-        return header + data + (b"\n" if len(data) % 2 else b"")
+    def gz_tar(files: dict[str, bytes]) -> bytes:
+        buf = io.BytesIO()
+        with tarfile.open(fileobj=buf, mode="w:gz") as tf:
+            for fname, data in files.items():
+                info = tarfile.TarInfo(fname)
+                info.size = len(data)
+                tf.addfile(info, io.BytesIO(data))
+        return buf.getvalue()
 
-    path.write_bytes(b"!<arch>\n" + entry("debian-binary", b"2.0\n") + entry("control.tar.gz", body))
+    control_tar = gz_tar({"./control": control})
+    data_tar = gz_tar({"./usr/share/test": b"x"})
+    path.write_bytes(
+        gz_tar(
+            {
+                "./debian-binary": b"2.0\n",
+                "./control.tar.gz": control_tar,
+                "./data.tar.gz": data_tar,
+            }
+        )
+    )
 
 
 class ConfigTest(unittest.TestCase):

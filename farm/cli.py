@@ -146,6 +146,20 @@ def cmd_publish(args) -> int:
     return 0
 
 
+def cmd_collect(args) -> int:
+    from .collect import collect
+
+    farm = config.load()
+    manifest = collect(
+        farm, args.flavor, args.release,
+        build_id=args.build, ref=args.ref, publish=args.publish, dry_run=args.dry_run,
+    )
+    print(f"сборка #{manifest['id']}: {len(manifest['packages'])} пакетов, release {manifest['release']}")
+    for p in manifest["packages"]:
+        print(f"  {p['name']:<28} {p['version']:<20} {p['arch']}")
+    return 0
+
+
 def cmd_logs(args) -> int:
     farm = config.load()
     base = farm.builds_dir / str(args.build)
@@ -207,6 +221,15 @@ def parser() -> argparse.ArgumentParser:
     s.add_argument("--allow-dirty", action="store_true")
     s.add_argument("--refresh", action="store_true")
     s.set_defaults(func=cmd_build)
+
+    s = sub.add_parser("collect", help="собрать манифест из готовых ipk в SDK")
+    s.add_argument("--flavor", required=True)
+    s.add_argument("--release", required=True, help="номер выпуска, например 2611261403")
+    s.add_argument("--build", type=int, help="id сборки, которую восстановить")
+    s.add_argument("--ref", default="", help="коммит упаковки, из которого собрано")
+    s.add_argument("--publish", action="store_true")
+    s.add_argument("--dry-run", action="store_true")
+    s.set_defaults(func=cmd_collect)
 
     s = sub.add_parser("publish", help="опубликовать готовую сборку")
     s.add_argument("--build", type=int, required=True)

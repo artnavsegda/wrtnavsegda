@@ -26,7 +26,7 @@ class IpkMeta:
 def read_meta(path: Path) -> IpkMeta:
     data = path.read_bytes()
     if not data.startswith(AR_MAGIC):
-        raise IpkError(f"{path.name}: не ar-архив")
+        return _meta_from_tar(data, path)
     off = len(AR_MAGIC)
     while off + 60 <= len(data):
         header = data[off : off + 60]
@@ -50,6 +50,28 @@ def read_meta(path: Path) -> IpkMeta:
             )
         off += 60 + size + (size % 2)
     raise IpkError(f"{path.name}: нет control.tar")
+
+
+def _meta_from_tar(data: bytes, path: Path) -> IpkMeta:
+    """OpenWrt ipk: gzip tar с control.tar.gz внутри (не Debian-овский ar)."""
+    try:
+        with tarfile.open(fileobj=io.BytesIO(data)) as outer:
+            member = next(
+                (m for m in outer.getmembers() if m.name.lstrip("./").startswith("control.tar")),
+                None,
+            )
+            if member is None:
+                raise IpkError(f"{path.name}: нет control.tar внутри tar")
+            blob = outer.extractfile(member).read()
+    except tarfile.TarError as e:
+        raise IpkError(f"{path.name}: не ipk (ни ar, ни tar.gz): {e}") from e
+    fields = _control_fields(blob, path)
+    return IpkMeta(
+        name=fields.get("Package", ""),
+        version=fields.get("Version", ""),
+        arch=fields.get("Architecture", ""),
+        depends=fields.get("Depends", ""),
+    )
 
 
 def _control_fields(blob: bytes, path: Path) -> dict[str, str]:

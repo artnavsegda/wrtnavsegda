@@ -30,6 +30,7 @@ python3 farm/main.py build --flavor irz                    # собрать и �
 python3 farm/main.py build --flavor irz --only halo-mod-software
 python3 farm/main.py build --flavor donyx --publish        # собрать и опубликовать
 python3 farm/main.py publish --build 12
+python3 farm/main.py collect --flavor irz --release 2611261403 --build 1 --ref <коммит>
 python3 farm/main.py logs --build 12
 ```
 
