@@ -46,7 +46,7 @@ button.danger{color:var(--red);border-color:#FCA5A5}
 .row:first-child{border-top:0}
 .row.head{font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);font-weight:600;min-height:0;padding:11px 16px 9px}
 .plat{grid-template-columns:60px 90px 1fr 190px 90px}
-.pkg{grid-template-columns:minmax(170px,1fr) 150px 130px 100px 110px 140px}
+.pkg{grid-template-columns:24px minmax(160px,1fr) 150px 130px 90px 105px 130px}
 .bld{grid-template-columns:56px 80px 1fr 150px 215px 90px}
 .row > *{min-width:0}
 .row .mono{font-family:var(--mono);font-size:11px;color:#374151;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -64,7 +64,7 @@ button.danger{color:var(--red);border-color:#FCA5A5}
 .split{display:grid;grid-template-columns:1fr 360px;gap:16px;align-items:start}
 .side{display:grid;gap:14px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px}
-.commits{display:grid;gap:8px;max-height:420px;overflow:auto;margin-top:10px}
+.commits{display:grid;gap:8px;max-height:72vh;overflow:auto;margin-top:10px}
 .commit{display:grid;gap:2px;font-size:11px;color:var(--sub);border-top:1px solid #F1F2F4;padding-top:7px}
 .commit .h{font-family:var(--mono);font-size:10.5px;color:#374151}
 .commit.cur{background:var(--blue-bg);border-radius:8px;padding:7px 8px;margin:0 -8px}
@@ -113,3 +113,7 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 .pkgrow button{padding:4px 9px;font-size:10.5px;border-radius:7px;justify-self:end}
 
 .mono{font-family:var(--mono);font-size:11px;color:#374151}
+
+.commit.hit{background:var(--blue-bg);box-shadow:inset 0 0 0 2px var(--blue);border-radius:8px;padding:7px 8px;margin:0 -8px}
+.chk{display:flex;align-items:center;justify-content:center}
+.chk input{width:14px;height:14px;margin:0;cursor:pointer}

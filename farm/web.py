@@ -164,7 +164,7 @@ class App:
                 if row and row["manifest"]:
                     base = json.loads(row["manifest"]).get("refs", {}).get("repo_head", "")
                     break
-        out = _git(repo, "log", "-60", "--date=short", "--format=%h\t%ad\t%s")
+        out = _git(repo, "log", "-200", "--date=short", "--format=%h\t%ad\t%s")
         commits = []
         for line in out.splitlines():
             parts = line.split("\t", 2)

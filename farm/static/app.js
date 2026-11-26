@@ -8,7 +8,8 @@ let flavor = localStorage.getItem("farm.flavor") || "irz";
 let cfgKind = "dist";
 let logTimer = null;
 let pollTimer = null;
-const selected = new Set();
+let chosen = null;
+const checked = new Set();
 
 async function api(path, opts) {
   const r = await fetch(path, opts);
@@ -89,7 +90,7 @@ function renderUpstream() {
     : `HEAD ${up.head.slice(0, 9)} · опубликованной сборки ещё нет`;
   $("#commits").innerHTML = up.commits.length
     ? up.commits
-        .map((c) => `<div class="commit${c.published ? " cur" : ""}"><span class="h">${esc(c.hash)}${c.published ? ' <span class="tagpub">в фиде</span>' : ""}${c.head ? ' <span class="taghead">HEAD</span>' : ""}</span><span>${esc(c.date)} · ${esc(c.subject)}</span></div>`)
+        .map((c) => `<div class="commit${c.published ? " cur" : ""}" data-hash="${esc(c.hash)}"><span class="h">${esc(c.hash)}${c.published ? ' <span class="tagpub">в фиде</span>' : ""}${c.head ? ' <span class="taghead">HEAD</span>' : ""}</span><span>${esc(c.date)} · ${esc(c.subject)}</span></div>`)
         .join("")
     : `<div class="empty">Нет новых коммитов после опубликованной сборки.</div>`;
 }
@@ -127,9 +128,30 @@ function updateSelectionButton() {
   const running = state.builds.some((b) => b.status === "running");
   const btn = $("#rebuild");
   if (!btn) return;
-  btn.textContent = selected.size ? `Собрать выбранные · ${selected.size}` : "Собрать выбранные";
-  btn.disabled = selected.size === 0 || running;
+  btn.textContent = checked.size ? `Собрать отмеченные · ${checked.size}` : "Собрать отмеченные";
+  btn.disabled = checked.size === 0 || running;
   btn.title = running ? "идёт сборка — дождитесь её окончания" : "";
+}
+
+function syncUpstream(name) {
+  const note = $("#upnote");
+  document.querySelectorAll("#commits .commit").forEach((c) => c.classList.remove("hit"));
+  if (!name || !pkgData) { if (note) note.textContent = ""; return; }
+  const p = pkgData.packages.find((x) => x.name === name);
+  const src = (p && p.source && p.source.commit) || "";
+  const build = pkgData.build && pkgData.build.refs ? pkgData.build.refs.repo_head || "" : "";
+  const list = [...document.querySelectorAll("#commits [data-hash]")];
+  let node = src ? list.find((n) => n.dataset.hash.startsWith(src)) : null;
+  let why = "";
+  if (!node && build) {
+    node = list.find((n) => n.dataset.hash.startsWith(build.slice(0, 7)));
+    why = src ? `источник ${p.source.repo}@${src} — другой репозиторий; показан коммит сборки` : "показан коммит сборки";
+  }
+  if (node) {
+    node.classList.add("hit");
+    node.scrollIntoView({ block: "center" });
+  }
+  if (note) note.textContent = why;
 }
 
 function renderPublish() {
@@ -178,9 +200,10 @@ function renderPackages() {
       const src = p.source && p.source.repo
         ? `<span class="br">${esc(p.source.repo)}</span><span class="mono">${esc(p.source.commit || "")}</span>`
         : `<span class="muted">—</span>`;
-      const sel = selected.has(p.name) ? " sel" : "";
+      const sel = chosen === p.name ? " sel" : "";
       const clickable = p.dir ? " clickable" : "";
-      return `<div class="row pkg${sel}${clickable}" data-name="${esc(p.name)}" data-dir="${esc(p.dir || "")}"><span class="name">${esc(p.name)}</span><span>${src}</span><span class="mono">${esc(p.version || "—")}</span>
+      const box = `<span class="chk"><input type="checkbox" data-chk="${esc(p.name)}" ${checked.has(p.name) ? "checked" : ""} ${p.dir ? "" : "disabled"}></span>`;
+      return `<div class="row pkg${sel}${clickable}" data-name="${esc(p.name)}" data-dir="${esc(p.dir || "")}">${box}<span class="name">${esc(p.name)}</span><span>${src}</span><span class="mono">${esc(p.version || "—")}</span>
         <span class="mono">${esc(p.arch)}</span><span>${st}</span><span>${bs}</span></div>`;
     })
     .join("");
@@ -199,11 +222,17 @@ function renderPackages() {
     })
   );
   $("#packages").querySelectorAll("[data-name]").forEach((row) =>
-    row.addEventListener("click", () => {
+    row.addEventListener("click", (ev) => {
+      if (ev.target.tagName === "INPUT") return;
       const name = row.dataset.name;
-      if (!row.dataset.dir) { toast(`${name}: arch-extra, собирается не из фида`); return; }
-      if (selected.has(name)) selected.delete(name); else selected.add(name);
-      row.classList.toggle("sel");
+      chosen = chosen === name ? null : name;
+      renderPackages();
+      syncUpstream(chosen);
+    })
+  );
+  $("#packages").querySelectorAll("[data-chk]").forEach((box) =>
+    box.addEventListener("change", () => {
+      if (box.checked) checked.add(box.dataset.chk); else checked.delete(box.dataset.chk);
       updateSelectionButton();
     })
   );
@@ -277,7 +306,7 @@ async function pull() {
 
 async function startBuild(publish, packages = []) {
   const body = { flavor, publish, packages };
-  selected.clear();
+  checked.clear();
   toast(publish ? "сборка и публикация запущены…" : "сборка запущена…");
   try {
     await api("/api/build", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -326,7 +355,7 @@ $("#pfilters").querySelectorAll("button").forEach((b) =>
 $("#pull").addEventListener("click", pull);
 $("#build").addEventListener("click", () => startBuild(false));
 $("#buildpublish").addEventListener("click", () => startBuild(true));
-$("#rebuild").addEventListener("click", () => startBuild(false, [...selected]));
+$("#rebuild").addEventListener("click", () => startBuild(false, [...checked]));
 $("#stop").addEventListener("click", stopBuild);
 $("#logclose").addEventListener("click", () => { clearInterval(logTimer); $("#logdlg").close(); });
 $("#logdlg").addEventListener("close", () => clearInterval(logTimer));
