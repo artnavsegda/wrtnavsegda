@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import tomllib
 from dataclasses import dataclass
@@ -32,6 +33,7 @@ class Platform:
     feeds: Path | None
     extras: tuple[str, ...]
     status: str
+    image_tree: Path | None = None
 
     @property
     def active(self) -> bool:
@@ -102,12 +104,25 @@ class Farm:
             d.mkdir(parents=True, exist_ok=True)
 
 
+def _deep_merge(base: dict, extra: dict) -> dict:
+    out = dict(base)
+    for k, v in extra.items():
+        if isinstance(v, dict) and isinstance(out.get(k), dict):
+            out[k] = _deep_merge(out[k], v)
+        else:
+            out[k] = v
+    return out
+
+
 def load(path: Path | None = None) -> Farm:
     project = PROJECT
     toml_path = path or (project / "farm.toml")
     if not toml_path.exists():
         raise ConfigError(f"нет конфига {toml_path}")
     raw = tomllib.loads(toml_path.read_text())
+    local = project / "platforms.local.toml"
+    if local.exists():
+        raw = _deep_merge(raw, tomllib.loads(local.read_text()))
 
     f = raw.get("farm", {})
     env = os.environ
@@ -140,6 +155,7 @@ def load(path: Path | None = None) -> Farm:
             feeds=_path(v.get("feeds"), project),
             extras=tuple(v.get("extras", ())),
             status=v.get("status", "active"),
+            image_tree=_path(v.get("image_tree"), project),
         )
 
     farm = Farm(
@@ -175,3 +191,35 @@ def _validate(farm: Farm) -> None:
     for plt in farm.platforms.values():
         if plt.status == "active" and (not plt.sdk or not plt.feeds):
             raise ConfigError(f"платформа {plt.name}: active, но не заданы sdk/feeds")
+
+
+def _toml_value(v) -> str:
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, (int, float)):
+        return str(v)
+    if isinstance(v, (list, tuple)):
+        return "[" + ", ".join(_toml_value(x) for x in v) + "]"
+    return json.dumps(str(v), ensure_ascii=False)
+
+
+def save_platform(project: Path, name: str, values: dict) -> Path:
+    """Правки платформы — в platforms.local.toml (поверх farm.toml)."""
+    path = project / "platforms.local.toml"
+    data = tomllib.loads(path.read_text()) if path.exists() else {}
+    platforms = data.setdefault("platforms", {})
+    cur = dict(platforms.get(name, {}))
+    for k, v in values.items():
+        if v in ("", [], None):
+            cur.pop(k, None)
+        else:
+            cur[k] = v
+    platforms[name] = cur
+    lines = ["# Правки платформ из интерфейса. Поверх farm.toml; можно удалять вручную.", ""]
+    for pname, pdata in platforms.items():
+        lines.append(f"[platforms.{pname}]")
+        for k, v in pdata.items():
+            lines.append(f"{k} = {_toml_value(v)}")
+        lines.append("")
+    path.write_text("\n".join(lines))
+    return path

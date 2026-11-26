@@ -61,23 +61,7 @@ function render() {
 }
 
 function openPlat(name) {
-  const p = state.platforms.find((x) => x.name === name);
-  if (!p) return;
-  $("#plattitle").textContent = `Платформа · ${p.name}`;
-  const rows = [
-    ["board", p.board],
-    ["target", p.target],
-    ["arch", p.arch],
-    ["release", p.release],
-    ["sdk", p.sdk || "—"],
-    ["feeds", p.feeds || "—"],
-    ["extras", (p.extras || []).join(", ") || "—"],
-    ["состояние", p.status + (p.sdk_ok ? " · SDK на месте" : " · SDK нет")],
-  ];
-  $("#platbody").innerHTML = rows
-    .map(([k, v]) => `<div class="platrow"><span class="k">${esc(k)}</span><span class="v">${esc(v)}</span></div>`)
-    .join("");
-  $("#platdlg").showModal();
+  location.href = `/platform/${encodeURIComponent(name)}`;
 }
 
 function renderPlatforms() {
@@ -339,7 +323,6 @@ $("#pfilters").querySelectorAll("button").forEach((b) =>
     renderPackages();
   })
 );
-$("#platclose").addEventListener("click", () => $("#platdlg").close());
 $("#pull").addEventListener("click", pull);
 $("#build").addEventListener("click", () => startBuild(false));
 $("#buildpublish").addEventListener("click", () => startBuild(true));

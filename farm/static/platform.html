@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>ipk farm · платформа</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="top">
+  <div>
+    <div class="crumbs"><a href="/">← ферма</a> · платформа</div>
+    <h1 id="pname">…</h1>
+    <p class="sub" id="psub">…</p>
+  </div>
+  <div class="topact"><span id="pstate" class="muted"></span></div>
+</header>
+
+<main class="pgrid">
+  <div>
+    <section class="block">
+      <div class="blockhead"><h2>Параметры</h2><span class="muted" id="psaved"></span></div>
+      <div class="card form">
+        <label>SDK (каталог распакованного SDK)<input id="sdk" spellcheck="false"></label>
+        <label>Шаблон feeds.conf<input id="feeds" spellcheck="false"></label>
+        <label>arch-extras (через запятую)<input id="extras" spellcheck="false"></label>
+        <label>Дерево для сборки образа<input id="image_tree" spellcheck="false" placeholder="путь к полному OpenWrt, если нужен образ"></label>
+        <div class="actions">
+          <button class="primary" id="savepaths">Сохранить</button>
+          <span class="muted">правится в farm/platforms.local.toml</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="block">
+      <div class="blockhead"><h2>.config</h2><span class="muted" id="cfgpath"></span></div>
+      <div class="card">
+        <textarea id="dotconfig" spellcheck="false" placeholder=".config появится здесь"></textarea>
+        <div class="actions">
+          <button id="saveconfig">Сохранить .config</button>
+          <span class="muted">перед записью делается .config.bak.&lt;время&gt;</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <aside>
+    <section class="block">
+      <div class="blockhead"><h2>Операции</h2><span class="muted" id="opstate"></span></div>
+      <div class="card">
+        <div class="oplist" id="ops"></div>
+        <pre class="oplog" id="oplog">—</pre>
+      </div>
+    </section>
+  </aside>
+</main>
+<script src="/static/platform.js"></script>
+</body>
+</html>

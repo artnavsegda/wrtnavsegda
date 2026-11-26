@@ -11,6 +11,7 @@ import os
 import re
 import signal
 import subprocess
+import threading
 import sys
 from datetime import datetime
 import time
@@ -322,6 +323,127 @@ class App:
             subprocess.Popen(args, cwd=str(farm.repo), stdout=fh, stderr=subprocess.STDOUT, start_new_session=True)
         return {"started": True, "flavor": flavor, "log": str(log)}
 
+    # ---------- платформа ----------
+
+    OPS = {
+        "feeds_update": ("feeds update -a", ["./scripts/feeds", "update", "-a"], False),
+        "feeds_install": ("feeds install -a", ["./scripts/feeds", "install", "-a"], False),
+        "feeds_list": ("feeds list", ["./scripts/feeds", "list"], True),
+        "sdk_pull": ("git pull в SDK", ["git", "pull", "--ff-only"], False),
+    }
+
+    def payload_platform(self, name: str) -> dict:
+        farm = config.load()
+        p = farm.platform(name)
+        sdk = p.sdk
+        cfg = sdk / ".config" if sdk else None
+        text = cfg.read_text(errors="replace") if cfg and cfg.exists() else ""
+        local = farm.project / "platforms.local.toml"
+        ops = []
+        for op, (title, cmd, sync) in self.OPS.items():
+            ok = bool(sdk and sdk.exists())
+            if op == "sdk_pull":
+                ok = ok and (sdk / ".git").exists()
+            ops.append({"id": op, "title": title, "sync": sync, "ok": ok})
+        ops.append({"id": "image", "title": "собрать образ прошивки", "sync": False,
+                    "ok": bool(p.image_tree and p.image_tree.exists())})
+        return {
+            "name": p.name,
+            "board": p.board,
+            "target": p.target,
+            "arch": p.arch,
+            "release": p.release,
+            "status": p.status,
+            "sdk": str(sdk or ""),
+            "sdk_ok": bool(sdk and sdk.exists()),
+            "sdk_git": bool(sdk and (sdk / ".git").exists()),
+            "feeds": str(p.feeds or ""),
+            "extras": list(p.extras),
+            "image_tree": str(p.image_tree or ""),
+            "image_ok": bool(p.image_tree and p.image_tree.exists()),
+            "config": text,
+            "config_path": str(cfg or ""),
+            "overrides": local.exists(),
+            "ops": ops,
+        }
+
+    def action_platform_paths(self, name: str, body: dict) -> dict:
+        extras = body.get("extras", "")
+        if isinstance(extras, str):
+            extras = [x.strip() for x in extras.split(",") if x.strip()]
+        values = {
+            "sdk": body.get("sdk", ""),
+            "feeds": body.get("feeds", ""),
+            "extras": extras,
+            "image_tree": body.get("image_tree", ""),
+        }
+        path = config.save_platform(config.PROJECT, name, values)
+        return {"ok": True, "saved": str(path)}
+
+    def action_platform_config(self, name: str, body: dict) -> dict:
+        farm = config.load()
+        sdk = farm.platform(name).sdk
+        if not sdk or not sdk.exists():
+            return {"ok": False, "error": "нет SDK"}
+        cfg = sdk / ".config"
+        if cfg.exists():
+            backup = sdk / f".config.bak.{datetime.now().strftime('%Y%m%d-%H%M%S')}"
+            backup.write_bytes(cfg.read_bytes())
+        cfg.write_text(str(body.get("text", "")))
+        return {"ok": True, "path": str(cfg)}
+
+    def action_platform_op(self, name: str, body: dict) -> dict:
+        farm = config.load()
+        p = farm.platform(name)
+        op = str(body.get("op", ""))
+        if op == "image":
+            if not p.image_tree or not p.image_tree.exists():
+                return {"ok": False, "error": "не задан image_tree"}
+            cmd = ["make", f"-j{farm.jobs}"]
+            cwd = p.image_tree
+        else:
+            spec = self.OPS.get(op)
+            if not spec:
+                return {"ok": False, "error": f"неизвестная операция {op}"}
+            if not p.sdk or not p.sdk.exists():
+                return {"ok": False, "error": "нет SDK"}
+            if op == "sdk_pull" and not (p.sdk / ".git").exists():
+                return {"ok": False, "error": "SDK не git-репозиторий"}
+            cmd = spec[1]
+            cwd = p.sdk
+
+        env = os.environ.copy()
+        if p.sdk:
+            env["PATH"] = f"{p.sdk / 'staging_dir' / 'host' / 'bin'}:{env.get('PATH', '')}"
+        env["LC_ALL"] = "C"
+
+        specs = self.OPS.get(op)
+        if specs and specs[2]:
+            proc = subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True, timeout=120)
+            return {"ok": proc.returncode == 0, "output": (proc.stdout + proc.stderr)[-20000:]}
+
+        log = farm.state_dir / "ops" / f"{name}-{op}.log"
+        log.parent.mkdir(parents=True, exist_ok=True)
+        log.write_text(f"$ {' '.join(cmd)}  (cwd {cwd})\n")
+        with open(log, "a") as fh:
+            proc = subprocess.Popen(cmd, cwd=cwd, env=env, stdout=fh, stderr=subprocess.STDOUT,
+                                    start_new_session=True)
+
+        def wait_and_mark():
+            code = proc.wait()
+            with open(log, "a") as fh:
+                fh.write(f"\nEXIT:{code}\n")
+
+        threading.Thread(target=wait_and_mark, daemon=True).start()
+        return {"ok": True, "started": True, "log": str(log), "pid": proc.pid}
+
+    def payload_oplog(self, name: str, op: str) -> dict:
+        farm = config.load()
+        path = farm.state_dir / "ops" / f"{name}-{op}.log"
+        if not path.exists():
+            return {"exists": False, "lines": []}
+        return {"exists": True, "lines": path.read_text(errors="replace").splitlines()[-300:]}
+
     def action_stop(self, body: dict) -> dict:
         farm = config.load()
         conn = state.connect(farm.state_dir)
@@ -483,6 +605,15 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(self.app.payload_packages(q.get("flavor", ["irz"])[0]))
             if path == "/api/config":
                 return self.json(self.app.action_config(q))
+            if path.startswith("/platform/"):
+                return self.static("platform.html")
+            if path.startswith("/api/platform/"):
+                parts = path[len("/api/platform/"):].split("/")
+                name = parts[0]
+                if len(parts) == 1:
+                    return self.json(self.app.payload_platform(name))
+                if parts[1] == "oplog":
+                    return self.json(self.app.payload_oplog(name, q.get("op", [""])[0]))
             if path == "/api/log":
                 return self.json(self.app.payload_pkg_log(
                     int(q.get("build", ["0"])[0]),
@@ -512,6 +643,16 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(self.app.action_publish(body))
             if url.path == "/api/stop":
                 return self.json(self.app.action_stop(body))
+            if url.path.startswith("/api/platform/"):
+                parts = url.path[len("/api/platform/"):].split("/")
+                if len(parts) == 2:
+                    name, action = parts
+                    if action == "paths":
+                        return self.json(self.app.action_platform_paths(name, body))
+                    if action == "config":
+                        return self.json(self.app.action_platform_config(name, body))
+                    if action == "op":
+                        return self.json(self.app.action_platform_op(name, body))
             return self.error("не найдено", 404)
         except Exception as e:  # noqa: BLE001
             return self.error(f"{type(e).__name__}: {e}", 500)
