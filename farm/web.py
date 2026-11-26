@@ -666,7 +666,7 @@ def _progress(farm, build: dict, total_dirs: int) -> dict | None:
     dirs: list[str] = []
     total = 0
     for line in lines:
-        m = re.match(r"\[(\d+)/(\d+)\] (\S+)", line)
+        m = re.search(r"\[(\d+)/(\d+)\] (\S+)", line)
         if m:
             dirs.append(m.group(3))
             total = int(m.group(2))
