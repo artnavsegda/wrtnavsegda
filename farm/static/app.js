@@ -273,6 +273,14 @@ function renderPackages() {
     })
   );
   updateSelectionButton();
+  fitUpstream();
+}
+
+function fitUpstream() {
+  const table = document.querySelector("#packages");
+  const card = document.querySelector(".side .card");
+  if (!table || !card) return;
+  card.style.height = Math.round(table.getBoundingClientRect().height) + "px";
 }
 
 async function loadConfig() {
@@ -421,4 +429,5 @@ $("#copy").addEventListener("click", async () => {
   }
 });
 
+addEventListener("resize", fitUpstream);
 loadState().catch((e) => { $("#repostatus").textContent = `ошибка: ${e.message}`; });
