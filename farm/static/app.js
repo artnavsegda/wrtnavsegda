@@ -257,6 +257,7 @@ function renderPackages() {
     if (q && !p.name.toLowerCase().includes(q)) return false;
     if (pfilter === "changed") return p.status === "обновится";
     if (pfilter === "new") return p.status === "новый" || p.status === "не в фиде";
+    if (pfilter === "outside") return p.status === "не в сборке";
     return true;
   });
 
