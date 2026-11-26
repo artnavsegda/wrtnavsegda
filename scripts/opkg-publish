@@ -12,7 +12,7 @@ KEY=${KEY:-$HOME/.config/opkg-feed/key-build}
 # пакеты других фидов SDK, нужные пакетам halo, которых нет в фидах прошивки: модули lighttpd
 # iRZ 1.4.85 (feeds/irz/net/lighttpd — копия clean/packages; плагин грузится только той же
 # версией lighttpd, что в прошивке)
-EXTRA="${EXTRA:-irz/lighttpd-mod-proxy_*.ipk}"
+EXTRA="${EXTRA-irz/lighttpd-mod-proxy_*.ipk}"
 BIN=$SDK/staging_dir/host/bin
 export PATH="$BIN:$PATH" MKHASH="$BIN/mkhash"
 [ -w "$(dirname $DST)" ] || { echo "no write access to $(dirname $DST)" >&2; exit 1; }
