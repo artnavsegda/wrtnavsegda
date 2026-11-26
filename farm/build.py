@@ -251,18 +251,24 @@ class Builder:
     def _go(self) -> Result:
         self.preflight()
         self.started_ts = datetime.now().timestamp()
-        self.conn = state.connect(self.farm.state_dir)
-        self.build_id = state.start_build(
-            self.conn, self.flavor.name, self.platform.name, now(), self.release, Path("")
-        )
-        self.dir = self.farm.builds_dir / str(self.build_id)
+        if self.opts.dry_run:
+            self.conn = None
+            self.build_id = 0
+            self.dir = self.farm.builds_dir / "dry-run"
+        else:
+            self.conn = state.connect(self.farm.state_dir)
+            self.build_id = state.start_build(
+                self.conn, self.flavor.name, self.platform.name, now(), self.release, Path("")
+            )
+            self.dir = self.farm.builds_dir / str(self.build_id)
         (self.dir / "logs").mkdir(parents=True, exist_ok=True)
         self.log_path = self.dir / "build.log"
         self.log_fh = open(self.log_path, "a")
-        self.conn.execute(
-            "update builds set log=? where id=?", (str(self.log_path), self.build_id)
-        )
-        self.conn.commit()
+        if self.conn:
+            self.conn.execute(
+                "update builds set log=? where id=?", (str(self.log_path), self.build_id)
+            )
+            self.conn.commit()
 
         manifest: dict = {}
         try:
@@ -276,7 +282,6 @@ class Builder:
             self.feeds_update()
             self.compile()
             if self.opts.dry_run:
-                state.finish_build(self.conn, self.build_id, "dry-run", now(), None)
                 self.log("dry-run: команды показаны, сборка не выполнялась")
                 return Result(self.build_id, {"id": self.build_id, "status": "dry-run", "packages": []})
             packages = self.collect()
@@ -327,15 +332,17 @@ class Builder:
                         "source_commit": c,
                     }
                 )
-                if not self.opts.dry_run:
+                if self.conn:
                     state.add_package(self.conn, self.build_id, meta, f.name, digest, b, c)
-            self.conn.commit()
+            if self.conn:
+                self.conn.commit()
 
             if not self.opts.dry_run:
                 (self.dir / "manifest.json").write_text(
                     json_dumps(manifest), encoding="utf-8"
                 )
-            state.finish_build(self.conn, self.build_id, "ok", now(), manifest)
+            if self.conn:
+                state.finish_build(self.conn, self.build_id, "ok", now(), manifest)
             self.log(f"собрано {len(manifest['packages'])} пакетов; манифест {self.dir}/manifest.json")
 
             published = None
@@ -346,7 +353,8 @@ class Builder:
                 self.log(f"опубликовано в {self.farm.publish_root / self.flavor.feed}")
             return Result(self.build_id, manifest, published)
         except Exception:
-            state.finish_build(self.conn, self.build_id, "failed", now(), manifest or None)
+            if self.conn:
+                state.finish_build(self.conn, self.build_id, "failed", now(), manifest or None)
             raise
 
     def _source_of(self, name: str) -> tuple[str, str]:
