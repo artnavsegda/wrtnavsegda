@@ -108,7 +108,7 @@ function renderBuilds() {
 
 function renderLastBuild(cur) {
   const b = cur.last_build;
-  const l = (b && b.live) || null;
+  const l = b ? ((state.builds.find((x) => x.id === b.id) || {}).live || null) : null;
   const pct = l && l.total ? Math.round(((l.current - 1) / l.total) * 100) : 0;
   $("#lastbuild").innerHTML = b
     ? `<div>сборка <b>#${b.id}</b> · <b>${esc(b.status)}</b></div>
