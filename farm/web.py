@@ -412,6 +412,12 @@ class App:
             cmd = spec[1]
             cwd = p.sdk
 
+        if op != "feeds_list":
+            conn = state.connect(farm.state_dir)
+            busy = conn.execute("select id, flavor from builds where status='running'").fetchone()
+            if busy and farm.flavors.get(busy["flavor"]) and farm.flavors[busy["flavor"]].sdk_platform == name:
+                return {"ok": False, "error": f"идёт сборка #{busy['id']} ({busy['flavor']}) — SDK занят"}
+
         env = os.environ.copy()
         if p.sdk:
             env["PATH"] = f"{p.sdk / 'staging_dir' / 'host' / 'bin'}:{env.get('PATH', '')}"
