@@ -282,8 +282,11 @@ function renderPackages() {
       const sel = chosen === p.name ? " sel" : "";
       const clickable = p.dir ? " clickable" : "";
       const box = `<span class="chk"><input type="checkbox" data-chk="${esc(p.name)}" ${checked.has(p.name) ? "checked" : ""} ${p.dir ? "" : "disabled"}></span>`;
+      const one = chosen === p.name && p.dir
+        ? `<button class="pbtn" data-one="${esc(p.name)}" ${running ? "disabled" : ""}>Собрать</button>`
+        : "";
       return `<div class="row pkg${sel}${clickable}" data-name="${esc(p.name)}" data-dir="${esc(p.dir || "")}">${box}<span class="name">${esc(p.name)}</span><span>${src}</span><span class="mono">${esc(p.version || "—")}</span>
-        <span class="mono">${esc(p.arch)}</span><span>${st}</span><span>${bs}</span></div>`;
+        <span class="mono">${esc(p.arch)}</span><span>${st}</span><span>${bs}</span><span class="act">${one}</span></div>`;
     })
     .join("");
 
@@ -298,6 +301,12 @@ function renderPackages() {
     b.addEventListener("click", (ev) => {
       ev.stopPropagation();
       openPkgLog(b.dataset.build, b.dataset.logpkg);
+    })
+  );
+  $("#packages").querySelectorAll("[data-one]").forEach((b) =>
+    b.addEventListener("click", (ev) => {
+      ev.stopPropagation();
+      startBuild(true, [b.dataset.one]);
     })
   );
   $("#packages").querySelectorAll("[data-chk]").forEach((box) =>
