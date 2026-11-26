@@ -7,7 +7,9 @@
 from __future__ import annotations
 
 import json
+import os
 import re
+import signal
 import subprocess
 import sys
 from datetime import datetime
@@ -92,6 +94,7 @@ class App:
                 "status": row["status"],
                 "release": row["release"],
                 "published": bool(row["published"]),
+                "pid": row["pid"] if "pid" in row.keys() else None,
             }
             if item["status"] == "running":
                 item["live"] = _live_progress(farm, item)
@@ -300,6 +303,33 @@ class App:
             subprocess.Popen(args, cwd=str(farm.repo), stdout=fh, stderr=subprocess.STDOUT, start_new_session=True)
         return {"started": True, "flavor": flavor, "log": str(log)}
 
+    def action_stop(self, body: dict) -> dict:
+        farm = config.load()
+        conn = state.connect(farm.state_dir)
+        flavor = data_flavor(body)
+        row = conn.execute(
+            "select * from builds where flavor=? and status='running' order by id desc limit 1",
+            (flavor,),
+        ).fetchone()
+        if not row:
+            return {"ok": False, "error": "нет идущей сборки"}
+        pid = row["pid"] if "pid" in row.keys() else None
+        if not pid:
+            out = subprocess.run(["pgrep", "-f", f"farm/main.py build --flavor {flavor}"],
+                                 capture_output=True, text=True)
+            pid = int(out.stdout.split()[0]) if out.stdout.strip() else None
+        if not pid:
+            return {"ok": False, "error": "не найден процесс сборки"}
+        try:
+            pgid = os.getpgid(pid)
+            os.killpg(pgid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+        except PermissionError:
+            os.kill(pid, signal.SIGTERM)
+        state.mark_stopped(conn, row["id"], datetime.now().astimezone().isoformat(timespec="seconds"))
+        return {"ok": True, "build": row["id"], "pid": pid}
+
     def action_publish(self, body: dict) -> dict:
         build_id = int(body["build"])
         proc = subprocess.run(
@@ -469,6 +499,8 @@ class Handler(BaseHTTPRequestHandler):
                 return self.json(self.app.action_build(body))
             if url.path == "/api/publish":
                 return self.json(self.app.action_publish(body))
+            if url.path == "/api/stop":
+                return self.json(self.app.action_stop(body))
             return self.error("не найдено", 404)
         except Exception as e:  # noqa: BLE001
             return self.error(f"{type(e).__name__}: {e}", 500)

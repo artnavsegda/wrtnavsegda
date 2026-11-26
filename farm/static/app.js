@@ -54,6 +54,7 @@ function render() {
   renderPlatforms();
   renderUpstream();
   renderBuilds();
+  renderControls();
   renderPublish();
   loadPackages();
   loadConfig();
@@ -105,6 +106,14 @@ function renderBuilds() {
     .join("");
   $("#builds").innerHTML = head + (rows || `<div class="empty">Сборок ещё нет.</div>`);
   $("#builds").querySelectorAll("[data-log]").forEach((b) => b.addEventListener("click", () => openLog(b.dataset.log)));
+}
+
+function renderControls() {
+  const running = state.builds.some((b) => b.status === "running");
+  $("#stop").disabled = !running;
+  $("#build").disabled = running;
+  $("#buildpublish").disabled = running;
+  $("#stop").title = running ? "" : "нет идущей сборки";
 }
 
 function updateSelectionButton() {
@@ -225,6 +234,17 @@ async function startBuild(publish, packages = []) {
   }
 }
 
+async function stopBuild() {
+  if (!confirm("Остановить идущую сборку?")) return;
+  try {
+    const r = await api("/api/stop", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ flavor }) });
+    toast(r.ok ? `сборка #${r.build} остановлена` : `не остановилась: ${r.error}`, !r.ok);
+    await loadState();
+  } catch (e) {
+    toast(e.message, true);
+  }
+}
+
 async function publishBuild(id) {
   toast(`публикация сборки #${id}…`);
   try {
@@ -240,6 +260,7 @@ $("#pull").addEventListener("click", pull);
 $("#build").addEventListener("click", () => startBuild(false));
 $("#buildpublish").addEventListener("click", () => startBuild(true));
 $("#rebuild").addEventListener("click", () => startBuild(false, [...selected]));
+$("#stop").addEventListener("click", stopBuild);
 $("#logclose").addEventListener("click", () => { clearInterval(logTimer); $("#logdlg").close(); });
 $("#logdlg").addEventListener("close", () => clearInterval(logTimer));
 

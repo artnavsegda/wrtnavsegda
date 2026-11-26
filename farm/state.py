@@ -17,7 +17,8 @@ create table if not exists builds (
   release text,
   log text,
   manifest text,
-  published integer not null default 0
+  published integer not null default 0,
+  pid integer
 );
 create table if not exists packages (
   build_id integer not null,
@@ -55,13 +56,19 @@ def connect(state_dir: Path) -> sqlite3.Connection:
     conn = sqlite3.connect(state_dir / "state.db")
     conn.row_factory = sqlite3.Row
     conn.executescript(SCHEMA)
+    try:
+        conn.execute("alter table builds add column pid integer")
+        conn.commit()
+    except sqlite3.OperationalError:
+        pass
     return conn
 
 
-def start_build(conn, flavor: str, platform: str, started: str, release: str, log: Path) -> int:
+def start_build(conn, flavor: str, platform: str, started: str, release: str, log: Path,
+                pid: int | None = None) -> int:
     cur = conn.execute(
-        "insert into builds(flavor, platform, started, status, release, log) values(?,?,?,?,?,?)",
-        (flavor, platform, started, "running", release, str(log)),
+        "insert into builds(flavor, platform, started, status, release, log, pid) values(?,?,?,?,?,?,?)",
+        (flavor, platform, started, "running", release, str(log), pid),
     )
     conn.commit()
     return int(cur.lastrowid)
@@ -96,6 +103,14 @@ def record_pull(conn, ts: str, head: str, behind: int, ahead: int, ok: bool, det
     conn.execute(
         "insert into pulls(ts, head, behind, ahead, ok, detail) values(?,?,?,?,?,?)",
         (ts, head, behind, ahead, 1 if ok else 0, detail),
+    )
+    conn.commit()
+
+
+def mark_stopped(conn, build_id: int, finished: str) -> None:
+    conn.execute(
+        "update builds set status='stopped', finished=? where id=? and status='running'",
+        (finished, build_id),
     )
     conn.commit()
 

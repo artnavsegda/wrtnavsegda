@@ -258,7 +258,8 @@ class Builder:
         else:
             self.conn = state.connect(self.farm.state_dir)
             self.build_id = state.start_build(
-                self.conn, self.flavor.name, self.platform.name, now(), self.release, Path("")
+                self.conn, self.flavor.name, self.platform.name, now(), self.release, Path(""),
+                pid=os.getpid(),
             )
             self.dir = self.farm.builds_dir / str(self.build_id)
         (self.dir / "logs").mkdir(parents=True, exist_ok=True)
