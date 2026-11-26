@@ -115,6 +115,38 @@ test.describe("главная: пакеты", () => {
   });
 });
 
+test.describe("новые страницы", () => {
+  test("кнопка «＋ платформа» ведёт на форму", async ({ page }) => {
+    await page.goto("/");
+    await page.locator("#addplat").click();
+    await expect(page).toHaveURL(/\/platform\/new$/);
+    await expect(page.locator("#name")).toBeVisible();
+  });
+
+  test("форма новой платформы: target задаёт arch", async ({ page }) => {
+    await page.goto("/platform/new");
+    await expect(page.locator("#arch")).toHaveValue("arm_cortex-a7_neon-vfpv4");
+    await page.locator("#target").selectOption("mediatek/filogic|aarch64_cortex-a53");
+    await expect(page.locator("#arch")).toHaveValue("aarch64_cortex-a53");
+  });
+
+  test("неверный SDK не создаёт платформу", async ({ page }) => {
+    await page.goto("/platform/new");
+    await page.locator("#name").fill("test-ui");
+    await page.locator("#board").fill("test");
+    await page.locator("#sdk").fill("/nope/sdk");
+    await page.locator("#create").click();
+    await expect(page.locator("#err")).toContainText("нет каталога SDK");
+  });
+
+  test("страница сборки показывает манифест и лог", async ({ page }) => {
+    await page.goto("/build/2");
+    await expect(page.locator("#btitle")).toContainText("Сборка #2");
+    await expect(page.locator("#bpackages .row.brow")).toHaveCount(3); // шапка + 2 пакета
+    await expect(page.locator("#blog")).toContainText("build #2");
+  });
+});
+
 test.describe("страница платформы", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/platform/r50");

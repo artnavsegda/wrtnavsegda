@@ -138,3 +138,5 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 .fchip.on{border-color:var(--blue);background:var(--blue-bg);color:var(--blue-tx);font-weight:600}
 .bmeta{padding:14px 16px;display:grid;grid-template-columns:1fr 1fr;gap:8px 24px}
 .bmeta .platrow{grid-template-columns:130px 1fr}
+
+.brow{grid-template-columns:minmax(160px,1fr) 150px 110px 80px 1fr}

@@ -41,8 +41,8 @@ async function load() {
   const pkgs = m.packages || [];
   $("#bcount").textContent = `${pkgs.length} пакетов`;
   $("#bpackages").innerHTML =
-    `<div class="row head"><span>Пакет</span><span>Версия</span><span>Arch</span><span>Размер</span><span>Источник</span></div>` +
-    pkgs.map((p) => `<div class="row"><span class="pkg">${esc(p.name)}</span><span class="mono">${esc(p.version)}</span>
+    `<div class="row head brow"><span>Пакет</span><span>Версия</span><span>Arch</span><span>Размер</span><span>Источник</span></div>` +
+    pkgs.map((p) => `<div class="row brow"><span class="pkg">${esc(p.name)}</span><span class="mono">${esc(p.version)}</span>
       <span class="mono">${esc(p.arch)}</span><span class="mono">${Math.round((p.size || 0) / 1024)} КБ</span>
       <span class="mono">${esc(p.source_branch)} ${esc(p.source_commit)}</span></div>`).join("");
   const log = await api(`/api/builds/${id}/log`);
