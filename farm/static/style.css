@@ -225,7 +225,7 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 .srccost{background:var(--amber-bg);border-radius:10px;padding:11px 12px;font-size:11px;color:#78350F;line-height:1.5}
 .srccost b{font-weight:600}
 /* экран подготовки SDK */
-.prov{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,460px);gap:18px;margin-top:20px;align-items:start}
+.prov{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,420px);gap:18px;margin-top:20px;align-items:start}
 .provside{display:grid;gap:14px;min-width:0}
 .prog{padding:18px 20px}
 .prog .pmeta{display:flex;justify-content:space-between;gap:12px;font-size:11px;color:var(--sub);margin-bottom:14px}
