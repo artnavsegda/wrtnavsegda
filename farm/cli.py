@@ -21,6 +21,31 @@ def _dt(value: str | None) -> str:
         return value
 
 
+def cmd_provision(args) -> int:
+    from . import provision
+
+    body = {
+        "name": args.name,
+        "source": args.source,
+        "target": args.target,
+        "release": args.release,
+        "board": args.board,
+        "brands": [b for b in (args.brands or "").split(",") if b],
+        "repo": args.repo,
+        "branch": args.branch,
+        "jobs": args.jobs,
+        "irz_local": args.irz_local,
+    }
+    try:
+        provision.run(config.PROJECT, body)
+    except Exception as e:  # noqa: BLE001
+        print(f"farm: {e}", file=sys.stderr, flush=True)
+        print("EXIT:1", flush=True)
+        return 1
+    print("EXIT:0", flush=True)
+    return 0
+
+
 def cmd_status(args) -> int:
     farm = config.load()
     farm.ensure_dirs()
@@ -194,6 +219,19 @@ def _buildbot(farm, flavor, platform, refresh=False) -> buildbot.BuildInfo:
 def parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="farm", description="ipk farm: сборка и публикация фида")
     sub = p.add_subparsers(dest="cmd", required=True)
+
+    s = sub.add_parser("provision", help="скачать или собрать SDK и добавить платформу")
+    s.add_argument("--name", required=True)
+    s.add_argument("--source", choices=["archive", "git"], required=True)
+    s.add_argument("--target", required=True)
+    s.add_argument("--release", default="24.10.2")
+    s.add_argument("--board", default="")
+    s.add_argument("--brands", default="irzOS,dnxOS")
+    s.add_argument("--repo", default="")
+    s.add_argument("--branch", default="")
+    s.add_argument("--jobs", default="")
+    s.add_argument("--irz-local", default="")
+    s.set_defaults(func=cmd_provision)
 
     s = sub.add_parser("status", help="состояние платформ, сборок и публикаций")
     s.add_argument("--json", action="store_true")

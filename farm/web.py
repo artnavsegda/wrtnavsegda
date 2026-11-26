@@ -513,11 +513,38 @@ class App:
         return {"ok": proc.returncode == 0, "output": (proc.stdout + proc.stderr)[-8000:]}
 
     def action_platform_add(self, body: dict) -> dict:
-        try:
-            config.add_platform(config.PROJECT, str(body.get("name", "")).strip(), body)
-        except config.ConfigError as e:
-            return {"ok": False, "error": str(e)}
-        return {"ok": True, "name": str(body.get("name", "")).strip()}
+        farm = config.load()
+        name = str(body.get("name", "")).strip()
+        if not config.NAME_RE.match(name):
+            return {"ok": False, "error": "имя: строчные латинские буквы, цифры, - и _"}
+        if name in farm.platforms:
+            return {"ok": False, "error": f"платформа «{name}» уже есть"}
+        source = str(body.get("source", "archive"))
+        if source not in ("archive", "git"):
+            return {"ok": False, "error": "источник: archive или git"}
+        if source == "git" and not body.get("repo"):
+            return {"ok": False, "error": "не указан git-репозиторий"}
+        if not str(body.get("target") or ""):
+            return {"ok": False, "error": "не выбран target"}
+
+        log = farm.state_dir / "ops" / f"{name}-provision.log"
+        log.parent.mkdir(parents=True, exist_ok=True)
+        args = [
+            sys.executable, str(PROJECT / "main.py"), "provision",
+            "--name", name,
+            "--source", source,
+            "--target", str(body["target"]),
+            "--release", str(body.get("release") or "24.10.2"),
+            "--board", str(body.get("board") or name),
+            "--brands", ",".join(body.get("brands") or ["irzOS", "dnxOS"]),
+            "--jobs", str(farm.jobs),
+        ]
+        if source == "git":
+            args += ["--repo", str(body["repo"]), "--branch", str(body.get("branch") or "master")]
+        with open(log, "ab") as fh:
+            subprocess.Popen(args, cwd=str(farm.repo), stdout=fh, stderr=subprocess.STDOUT,
+                             start_new_session=True)
+        return {"started": True, "name": name, "log": str(log)}
 
     def action_platform_delete(self, name: str) -> dict:
         try:

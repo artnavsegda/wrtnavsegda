@@ -10,13 +10,13 @@
   <div>
     <div class="crumbs"><a href="/">← ферма</a> · платформа · новая</div>
     <h1>Новая платформа</h1>
-    <p class="sub">Имя, архитектура и путь к SDK. Архитектура выбирается из поддерживаемых — вручную не вводится.</p>
+    <p class="sub">Имя, архитектура и источник SDK. Архитектура выбирается из поддерживаемых — вручную не вводится.</p>
   </div>
 </header>
 
 <main class="pgrid newgrid">
   <section class="block">
-    <div class="card form">
+    <div class="card form" id="form">
       <div class="frow">
         <label class="label">Имя платформы</label>
         <input id="name" placeholder="wrs" spellcheck="false">
@@ -48,21 +48,25 @@
       </div>
 
       <div class="frow">
-        <label class="label">SDK</label>
-        <input id="sdk" placeholder="~/sdk24-wrs/openwrt-sdk-…" spellcheck="false">
-        <div class="hint">Каталог распакованного SDK. Проверяется, что в нём есть <code>scripts/feeds</code>.</div>
-      </div>
+        <label class="label">Источник SDK</label>
+        <div class="tabs small" id="srctabs">
+          <button data-src="archive" class="on">Готовый архив</button>
+          <button data-src="git">Исходники из Git</button>
+        </div>
 
-      <div class="frow">
-        <label class="label">Шаблон feeds.conf</label>
-        <input id="feeds" value="feeds/" spellcheck="false">
-        <div class="hint">Относительно farm/ или абсолютный путь.</div>
-      </div>
+        <div id="src-archive">
+          <div class="hint" style="margin-top:10px">SDK скачается с <code>downloads.openwrt.org</code> для выбранного target и release, sha256 проверится, архив распакуется.</div>
+          <div class="urlpreview mono" id="urlpreview"></div>
+        </div>
 
-      <div class="frow">
-        <label class="label">arch-extras</label>
-        <input id="extras" spellcheck="false" placeholder="irz/lighttpd-mod-proxy_*.ipk">
-        <div class="hint">Через запятую; arch-специфичные пакеты, которые берутся из другого фида.</div>
+        <div id="src-git" style="display:none">
+          <label class="label" style="margin-top:12px">Репозиторий</label>
+          <input id="repo" value="https://git.openwrt.org/openwrt/openwrt.git" spellcheck="false">
+          <div class="hint">Upstream OpenWrt или адаптация компании с патчами.</div>
+          <label class="label" style="margin-top:12px">Ветка</label>
+          <input id="branch" value="openwrt-24.10" spellcheck="false">
+          <div class="hint">Ветка задаёт версию платформы; коммит фиксируется в манифесте сборок.</div>
+        </div>
       </div>
 
       <div class="frow">
@@ -76,21 +80,28 @@
 
       <div class="formactions">
         <a class="button" href="/">Отмена</a>
-        <button class="primary" id="create">Добавить платформу</button>
+        <button class="primary" id="create">Скачать и добавить</button>
         <span class="muted" id="err"></span>
       </div>
+    </div>
+
+    <div class="card" id="progress" style="display:none">
+      <h3 id="ptitle">Готовлю SDK…</h3>
+      <pre class="log" id="plog"></pre>
+      <div class="muted" id="pnote">Можно закрыть страницу: работа идёт на ферме.</div>
     </div>
   </section>
 
   <aside class="side">
     <section class="card">
       <h3>Что будет сделано</h3>
-      <div class="plan">
-        <div><span class="t">1</span><span>Проверить SDK и scripts/feeds</span><span class="d">сек</span></div>
-        <div><span class="t">2</span><span>Прочитать target и arch</span><span class="d">сек</span></div>
-        <div><span class="t">3</span><span>Записать <code>[platforms.*]</code> в farm.toml</span><span class="d">сразу</span></div>
-      </div>
-      <div class="note">Если путь не SDK или в нём нет <code>scripts/feeds</code> — платформа не создаётся, в поле будет причина. Архитектура проверяется по выбранному target.</div>
+      <div class="plan" id="plan"></div>
+      <div class="note" id="plannote"></div>
+    </section>
+
+    <section class="card yellow" id="longbuild" style="display:none">
+      <h3>Долгая сборка</h3>
+      <div>≈4–8 часов. Идёт на ферме в фоне: платформа появится, когда SDK будет готов, страницу можно закрыть. Готовый архив — 2–3 минуты.</div>
     </section>
 
     <section class="card">
