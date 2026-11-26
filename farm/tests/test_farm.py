@@ -150,6 +150,52 @@ class IpkTest(unittest.TestCase):
             self.assertEqual(meta.depends, "lighttpd, ttyd")
 
 
+class ArIpkTest(unittest.TestCase):
+    def test_parse_ar(self):
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "old_0.1-r1_all.ipk"
+            control = (
+                "Package: old\nVersion: 0.1-r1\nArchitecture: all\n"
+                "Depends: busybox\n"
+            ).encode()
+            tar = io.BytesIO()
+            with tarfile.open(fileobj=tar, mode="w:gz") as tf:
+                info = tarfile.TarInfo("./control")
+                info.size = len(control)
+                tf.addfile(info, io.BytesIO(control))
+            body = tar.getvalue()
+
+            def entry(aname: str, data: bytes) -> bytes:
+                header = f"{aname:<16}{'0':<12}{'0':<6}{'0':<6}{'100644':<8}{len(data):<10}`\n".encode()
+                return header + data + (b"\n" if len(data) % 2 else b"")
+
+            p.write_bytes(b"!<arch>\n" + entry("debian-binary", b"2.0\n") + entry("control.tar.gz", body))
+            meta = ipk.read_meta(p)
+            self.assertEqual(meta.name, "old")
+            self.assertEqual(meta.version, "0.1-r1")
+            self.assertEqual(meta.depends, "busybox")
+
+
+class CliTest(unittest.TestCase):
+    def test_build_publishes_by_default(self):
+        from farm.cli import parser
+
+        args = parser().parse_args(["build", "--flavor", "irz"])
+        self.assertFalse(args.no_publish)
+
+    def test_no_publish_flag(self):
+        from farm.cli import parser
+
+        args = parser().parse_args(["build", "--flavor", "irz", "--no-publish"])
+        self.assertTrue(args.no_publish)
+
+    def test_publish_flag_removed(self):
+        from farm.cli import parser
+
+        with self.assertRaises(SystemExit):
+            parser().parse_args(["build", "--flavor", "irz", "--publish"])
+
+
 class VersionTest(unittest.TestCase):
     def test_order(self):
         self.assertTrue(ipk.newer("0.1-r2611261430", "0.1-r2611191108"))

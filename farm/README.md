@@ -104,9 +104,18 @@ farm/
 
 ## Проверки
 
+Юнит-тесты (stdlib unittest, без сети и фермы):
+
 ```sh
-python3 -m unittest farm.tests.test_farm -v
+python3 -m unittest discover -s farm/tests -t . -v
 ```
+
+Покрыто: конфиг и merge overrides, buildbot-манифест, генерация distfeeds/
+customfeeds, разбор ipk (tar.gz и старый ar), версии, состояние SQLite,
+публикация (индекс, дубликаты, откат версий), источники пакетов и план сборки,
+CLI (публикация по умолчанию).
+
+UI-тесты (Playwright, живой интерфейс) — `farm/ui-tests/README.md`.
 
 ## Пока не сделано
 

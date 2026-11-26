@@ -1,0 +1,7 @@
+{
+  "name": "ipk-farm-ui-tests",
+  "private": true,
+  "devDependencies": {
+    "@playwright/test": "^1.65.0"
+  }
+}
