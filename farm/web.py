@@ -19,7 +19,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
-from . import buildbot, config, opkgcfg, state
+from . import buildbot, config, opkgcfg, repos, state
 from .sources import makefile_packages, source_map
 
 STATIC = Path(__file__).resolve().parent / "static"
@@ -335,6 +335,22 @@ class App:
         "sdk_pull": ("обновить SDK", "git pull --ff-only",
                      ["git", "pull", "--ff-only"], False),
     }
+
+    def payload_source(self, flavor_name: str, package: str) -> dict:
+        farm = config.load()
+        try:
+            flavor = farm.flavor(flavor_name)
+        except config.ConfigError as e:
+            return {"error": str(e)}
+        src = source_map(farm, flavor).get(package)
+        if not src:
+            return {"error": "пакет не из фида"}
+        if not src.get("url"):
+            return {"error": "собирается из самого репозитория"}
+        try:
+            return {**src, **repos.info(farm, src["url"], src.get("commit_full") or src.get("commit", ""))}
+        except repos.RepoError as e:
+            return {"error": str(e)}
 
     def payload_platform(self, name: str) -> dict:
         farm = config.load()
@@ -730,6 +746,10 @@ class Handler(BaseHTTPRequestHandler):
                     return self.json(self.app.payload_platform_feeds(name))
                 if parts[1] == "packages":
                     return self.json(self.app.payload_platform_packages(name, q.get("q", [""])[0]))
+            if path == "/api/source":
+                return self.json(self.app.payload_source(
+                    q.get("flavor", ["irz"])[0], q.get("package", [""])[0]
+                ))
             if path == "/api/log":
                 return self.json(self.app.payload_pkg_log(
                     int(q.get("build", ["0"])[0]),

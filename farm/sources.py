@@ -25,7 +25,12 @@ def makefile_packages(path: Path) -> list[str]:
 def _pin(text: str, prefix: str) -> tuple[str, str]:
     b = re.search(rf"^{prefix}_BRANCH\??\s*:?=\s*(\S+)", text, re.M)
     h = re.search(rf"^{prefix}_PINNED\s*:?=\s*([0-9a-f]{{7,40}})", text, re.M)
-    return (b.group(1) if b else ""), (h.group(1)[:7] if h else "")
+    return (b.group(1) if b else ""), (h.group(1) if h else "")
+
+
+def _url(text: str) -> str:
+    m = re.search(r"^PKG_SOURCE_URL\s*:?=\s*(\S+)", text, re.M)
+    return m.group(1) if m else ""
 
 
 def source_map(farm: Farm, flavor: Flavor) -> dict[str, dict]:
@@ -38,14 +43,16 @@ def source_map(farm: Farm, flavor: Flavor) -> dict[str, dict]:
         names = makefile_packages(mk) or [d]
         if "../halo.mk" in text:
             repo, commit = _pin(halo_text, "HALO")
+            url = _url(halo_text)
         elif "AURORA_PINNED" in text:
             repo, commit = _pin(text, "AURORA")
+            url = _url(text)
         else:
             h = re.search(r"^PKG_SOURCE_VERSION\s*:?=\s*([0-9a-f]{7,40})", text, re.M)
-            u = re.search(r"^PKG_SOURCE_URL\s*:?=\s*(\S+)", text, re.M)
-            repo = u.group(1).rstrip("/").split("/")[-1].removesuffix(".git") if u else ""
-            commit = h.group(1)[:7] if h else ""
-        info = {"repo": repo or "в репо", "commit": commit}
+            url = _url(text)
+            repo = url.rstrip("/").split("/")[-1].removesuffix(".git") if url else ""
+            commit = h.group(1) if h else ""
+        info = {"repo": repo or "в репо", "commit": commit[:7], "commit_full": commit, "url": url}
         for n in names:
             out[n] = info
     return out

@@ -117,3 +117,7 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 .commit.hit{background:var(--blue-bg);box-shadow:inset 0 0 0 2px var(--blue);border-radius:8px;padding:7px 8px;margin:0 -8px}
 .chk{display:flex;align-items:center;justify-content:center}
 .chk input{width:14px;height:14px;margin:0;cursor:pointer}
+
+.upheadrow{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.upheadrow h3{margin:0}
+.upheadrow .mini{display:none}

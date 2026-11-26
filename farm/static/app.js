@@ -85,6 +85,8 @@ function renderPlatforms() {
 
 function renderUpstream() {
   const up = state.upstream;
+  $("#uptitle").textContent = "Апстрим · wrtnavsegda";
+  $("#upback").style.display = "none";
   $("#uptop").textContent = up.base
     ? `HEAD ${up.head.slice(0, 9)} · сборка из ${up.base.slice(0, 9)} · ${up.commits.length} коммитов`
     : `HEAD ${up.head.slice(0, 9)} · опубликованной сборки ещё нет`;
@@ -131,6 +133,37 @@ function updateSelectionButton() {
   btn.textContent = checked.size ? `Собрать отмеченные · ${checked.size}` : "Собрать отмеченные";
   btn.disabled = checked.size === 0 || running;
   btn.title = running ? "идёт сборка — дождитесь её окончания" : "";
+}
+
+async function loadSource(name) {
+  $("#upnote").textContent = "";
+  if (!name) { renderUpstream(); return; }
+  $("#uptitle").textContent = "Апстрим · загружаю…";
+  $("#uptop").textContent = "";
+  $("#commits").innerHTML = "";
+  $("#upback").style.display = "none";
+  try {
+    const d = await api(`/api/source?flavor=${encodeURIComponent(flavor)}&package=${encodeURIComponent(name)}`);
+    if (d.error) { syncUpstream(name); $("#upnote").textContent = d.error; return; }
+    renderSource(name, d);
+  } catch (e) {
+    syncUpstream(name);
+    $("#upnote").textContent = e.message;
+  }
+}
+
+function renderSource(name, d) {
+  $("#uptitle").textContent = `Апстрим · ${d.repo}`;
+  $("#upback").style.display = "inline-flex";
+  $("#uptop").textContent = `${d.commit} · ${d.date || "?"} · ${d.found ? d.subject : "коммита нет в кэше"}`;
+  $("#commits").innerHTML = d.commits.length
+    ? d.commits
+        .map((c) => `<div class="commit" data-hash="${esc(c.hash)}"><span class="h">${esc(c.hash)}</span><span>${esc(c.date)} · ${esc(c.subject)}</span></div>`)
+        .join("")
+    : `<div class="empty">коммит ${esc(d.commit)} не найден в кэше репозитория</div>`;
+  const first = $("#commits .commit");
+  if (first) first.classList.add("hit");
+  $("#commits").scrollTop = 0;
 }
 
 function syncUpstream(name) {
@@ -230,7 +263,7 @@ function renderPackages() {
       const name = row.dataset.name;
       chosen = chosen === name ? null : name;
       renderPackages();
-      syncUpstream(chosen);
+      loadSource(chosen);
     })
   );
   $("#packages").querySelectorAll("[data-chk]").forEach((box) =>
@@ -360,6 +393,7 @@ $("#build").addEventListener("click", () => startBuild(false));
 $("#buildpublish").addEventListener("click", () => startBuild(true));
 $("#rebuild").addEventListener("click", () => startBuild(false, [...checked]));
 $("#stop").addEventListener("click", stopBuild);
+$("#upback").addEventListener("click", () => { chosen = null; renderPackages(); renderUpstream(); });
 $("#logclose").addEventListener("click", () => { clearInterval(logTimer); $("#logdlg").close(); });
 $("#logdlg").addEventListener("close", () => clearInterval(logTimer));
 
