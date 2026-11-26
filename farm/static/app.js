@@ -13,7 +13,6 @@ let cfgKind = "dist";
 let logTimer = null;
 let pollTimer = null;
 let chosen = null;
-const checked = new Set();
 
 async function api(path, opts) {
   const r = await fetch(path, opts);
@@ -174,9 +173,9 @@ function updateSelectionButton() {
   const running = state.builds.some((b) => b.status === "running");
   const btn = $("#rebuild");
   if (!btn) return;
-  btn.textContent = checked.size ? `Собрать и опубликовать · ${checked.size}` : "Собрать отмеченные";
-  btn.disabled = checked.size === 0 || running;
-  btn.title = running ? "идёт сборка — дождитесь её окончания" : "";
+  btn.textContent = "Собрать · 1";
+  btn.disabled = !chosen || running;
+  btn.title = running ? "идёт сборка — дождитесь её окончания" : (chosen ? `собрать ${chosen}` : "выберите пакет в списке");
 }
 
 async function loadSource(name) {
@@ -281,8 +280,7 @@ function renderPackages() {
         : `<span class="muted">—</span>`;
       const sel = chosen === p.name ? " sel" : "";
       const clickable = p.dir ? " clickable" : "";
-      const box = `<span class="chk"><input type="checkbox" data-chk="${esc(p.name)}" ${checked.has(p.name) ? "checked" : ""} ${p.dir ? "" : "disabled"}></span>`;
-      return `<div class="row pkg${sel}${clickable}" data-name="${esc(p.name)}" data-dir="${esc(p.dir || "")}">${box}<span class="name">${esc(p.name)}</span><span>${src}</span><span class="mono">${esc(p.version || "—")}</span>
+      return `<div class="row pkg${sel}${clickable}" data-name="${esc(p.name)}" data-dir="${esc(p.dir || "")}"><span class="name">${esc(p.name)}</span><span>${src}</span><span class="mono">${esc(p.version || "—")}</span>
         <span class="mono">${esc(p.arch)}</span><span>${st}</span><span>${bs}</span></div>`;
     })
     .join("");
@@ -307,11 +305,6 @@ function renderPackages() {
       chosen = chosen === name ? null : name;
       renderPackages();
       loadSource(chosen);
-    })
-  );
-  $("#packages").querySelectorAll("[data-chk]").forEach((box) =>
-    box.addEventListener("change", () => {
-      if (box.checked) checked.add(box.dataset.chk); else checked.delete(box.dataset.chk);
       updateSelectionButton();
     })
   );
@@ -395,7 +388,7 @@ async function pull() {
 
 async function startBuild(publish, packages = []) {
   const body = { flavor, platform: plat, publish, packages };
-  checked.clear();
+  chosen = null;
   toast(publish ? "сборка и публикация запущены…" : "сборка запущена…");
   try {
     await api("/api/build", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -436,7 +429,7 @@ $("#pfilters").querySelectorAll("button").forEach((b) =>
 );
 $("#pull").addEventListener("click", pull);
 $("#build").addEventListener("click", () => startBuild(true));
-$("#rebuild").addEventListener("click", () => startBuild(true, [...checked]));
+$("#rebuild").addEventListener("click", () => startBuild(true, chosen ? [chosen] : []));
 $("#stop").addEventListener("click", stopBuild);
 $("#upback").addEventListener("click", () => { chosen = null; renderPackages(); renderUpstream(); });
 $("#logclose").addEventListener("click", () => { clearInterval(logTimer); $("#logdlg").close(); });
