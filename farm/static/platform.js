@@ -39,7 +39,7 @@ async function load() {
 function renderOps() {
   $("#ops").innerHTML = data.ops
     .map((op) => `<div class="oprow"><button data-op="${op.id}" ${op.ok ? "" : "disabled"}>${esc(op.title)}</button>
-      <span class="muted mono">${esc(op.cmd)}</span></div>`)
+      <span class="muted mono" title="${esc(op.cmd)}">${esc(op.cmd)}</span></div>`)
     .join("");
   $("#ops").querySelectorAll("[data-op]").forEach((b) => b.addEventListener("click", () => runOp(b.dataset.op)));
 }
