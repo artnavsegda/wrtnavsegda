@@ -5,7 +5,7 @@ const rows = (page) => page.locator("#packages .row.pkg:not(.head)");
 test.describe("главная: платформы и flavor", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/");
-    await expect(page.locator("#platforms .row.plat")).toHaveCount(3);
+    await expect(page.locator("#platforms .row.plat:not(.head)")).toHaveCount(3);
   });
 
   test("шапка, flavor и три платформы", async ({ page }) => {
