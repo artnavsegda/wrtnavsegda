@@ -16,6 +16,7 @@ halo-mod-dash-hbar
 halo-mod-dash-load
 halo-mod-firmware
 halo-mod-software
+halo-mod-torrent
 halo-metrics            # halo-metrics, halo-metrics-collectd
 
 # схема репозиториев opkg (прод-horizont)
