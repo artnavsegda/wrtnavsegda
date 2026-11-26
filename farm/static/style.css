@@ -53,7 +53,7 @@ button.danger{color:var(--red);border-color:#FCA5A5}
 .row .name{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .row.clickable{cursor:pointer}
 .row.sel{background:#F7FAFF;box-shadow:inset 3px 0 0 var(--blue)}
-.pgear{color:var(--mut);font-size:13px;cursor:pointer;text-align:right}
+.pgear{color:var(--mut);font-size:16px;line-height:1;cursor:pointer;text-align:right;padding:0 4px}
 .pgear:hover{color:var(--blue-tx)}
 .row .name{font-weight:500}
 .br{font-size:9px;color:var(--sub);background:#F3F4F6;border:1px solid #E9EBEF;border-radius:4px;padding:1px 4px;margin-right:5px}
