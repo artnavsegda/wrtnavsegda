@@ -110,3 +110,5 @@ dialog .blockhead{padding:14px 16px;margin:0;border-bottom:1px solid var(--line)
 .pkgrow .pname{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pkgrow .pdesc{color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pkgrow button{padding:4px 9px;font-size:10.5px;border-radius:7px;justify-self:end}
+
+.mono{font-family:var(--mono);font-size:11px;color:#374151}
