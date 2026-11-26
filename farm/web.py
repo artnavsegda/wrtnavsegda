@@ -221,7 +221,7 @@ class App:
         done_all = last is not None and last["status"] == "ok"
 
         def state_of(name: str) -> str:
-            if name not in plan:
+            if name not in plan or last is None:
                 return ""
             if done_all:
                 return "built"
