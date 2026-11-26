@@ -7,9 +7,11 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import sys
 from datetime import datetime
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -81,18 +83,19 @@ class App:
 
         builds = []
         for row in state.recent_builds(conn, 12):
-            builds.append(
-                {
-                    "id": row["id"],
-                    "flavor": row["flavor"],
-                    "platform": row["platform"],
-                    "started": row["started"],
-                    "finished": row["finished"],
-                    "status": row["status"],
-                    "release": row["release"],
-                    "published": bool(row["published"]),
-                }
-            )
+            item = {
+                "id": row["id"],
+                "flavor": row["flavor"],
+                "platform": row["platform"],
+                "started": row["started"],
+                "finished": row["finished"],
+                "status": row["status"],
+                "release": row["release"],
+                "published": bool(row["published"]),
+            }
+            if item["status"] == "running":
+                item["live"] = _live_progress(farm, item)
+            builds.append(item)
 
         platforms = [
             {
@@ -272,6 +275,29 @@ class App:
 
 def data_flavor(body: dict) -> str:
     return str(body.get("flavor") or "irz")
+
+
+def _live_progress(farm, build: dict) -> dict:
+    path = farm.builds_dir / str(build["id"]) / "build.log"
+    out: dict = {"elapsed": 0, "idle": 0, "current": 0, "total": 0, "package": ""}
+    try:
+        started = datetime.fromisoformat(build["started"]).timestamp()
+        out["elapsed"] = max(0, int(time.time() - started))
+    except ValueError:
+        pass
+    if not path.exists():
+        return out
+    out["idle"] = max(0, int(time.time() - path.stat().st_mtime))
+    try:
+        lines = path.read_text(errors="replace").splitlines()[-200:]
+    except OSError:
+        return out
+    for line in reversed(lines):
+        m = re.search(r"\[(\d+)/(\d+)\] (\S+)", line)
+        if m:
+            out.update(current=int(m.group(1)), total=int(m.group(2)), package=m.group(3))
+            break
+    return out
 
 
 def _build_row(row) -> dict:

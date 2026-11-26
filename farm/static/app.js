@@ -1,5 +1,6 @@
 const $ = (s) => document.querySelector(s);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const mmss = (n) => { n = Math.max(0, n|0); const m = Math.floor(n/60); return m + ":" + String(n%60).padStart(2,"0"); };
 const dt = (s) => (s ? new Date(s).toLocaleString("ru-RU", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" }) : "—");
 
 let state = null;
@@ -88,7 +89,13 @@ function renderBuilds() {
   const head = `<div class="row head bld"><span>#</span><span>Flavor</span><span>Платформа</span><span>Начата</span><span>Статус</span><span></span></div>`;
   const rows = state.builds
     .map((b) => {
-      const st = b.status === "ok" ? `<span class="st ok">ok</span>` : b.status === "running" ? `<span class="st warn">идёт</span>` : b.status === "dry-run" ? `<span class="st mut">dry-run</span>` : `<span class="st err">${esc(b.status)}</span>`;
+      let st;
+      if (b.status === "ok") st = `<span class="st ok">ok</span>`;
+      else if (b.status === "running") {
+        const l = b.live || {};
+        st = `<span class="st warn">идёт ${l.current || 0}/${l.total || 0} · ${mmss(l.elapsed || 0)} · +${l.idle || 0}с</span>`;
+      } else if (b.status === "dry-run") st = `<span class="st mut">dry-run</span>`;
+      else st = `<span class="st err">${esc(b.status)}</span>`;
       const pub = b.published ? ` · опубликовано` : "";
       return `<div class="row bld"><span class="mono">${b.id}</span><span>${esc(b.flavor)}</span><span class="mono">${esc(b.platform)}</span>
         <span class="mono">${dt(b.started)}</span><span>${st}${pub}</span>
@@ -101,9 +108,13 @@ function renderBuilds() {
 
 function renderLastBuild(cur) {
   const b = cur.last_build;
+  const l = (b && b.live) || null;
+  const pct = l && l.total ? Math.round(((l.current - 1) / l.total) * 100) : 0;
   $("#lastbuild").innerHTML = b
     ? `<div>сборка <b>#${b.id}</b> · <b>${esc(b.status)}</b></div>
        <div>начата ${dt(b.started)} · release <b>${esc(b.release || "—")}</b></div>
+       ${l ? `<div>${esc(l.package || "…")} · ${l.current}/${l.total} · ${mmss(l.elapsed)} · вывод ${l.idle}с назад</div>
+              <div class="progress"><i style="width:${pct}%"></i></div>` : ""}
        <div>${b.published ? "опубликована" : "не опубликована"}</div>`
     : "сборок ещё нет";
   $("#showlog").disabled = !b;
