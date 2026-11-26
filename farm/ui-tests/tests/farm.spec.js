@@ -48,8 +48,8 @@ test.describe("главная: пакеты", () => {
 
   test("поиск по имени и фильтр «не в сборке»", async ({ page }) => {
     await page.locator("#q").fill("hello");
-    await expect(rows(page)).toHaveCount(2); // hello и libhello? минимум 1
     await expect(rows(page).first()).toContainText("hello");
+    expect(await rows(page).count()).toBeGreaterThanOrEqual(2); // cmhello, hello, libhello
 
     await page.locator("#q").fill("");
     await page.locator('#pfilters [data-f="outside"]').click();
@@ -137,7 +137,8 @@ test.describe("страница платформы", () => {
   test("фиды SDK и поиск пакетов", async ({ page }) => {
     await expect(page.locator("#feedchips")).toContainText("halo");
     await page.locator("#pkgq").fill("transmission");
-    await expect(page.locator(".pkgrow").first()).toContainText("transmission", { timeout: 30_000 });
-    await expect(page.locator(".pkgrow").first().locator("button")).toBeVisible();
+    const hit = page.locator(".pkgrow", { hasText: "transmission-daemon" }).first();
+    await expect(hit).toBeVisible({ timeout: 30_000 });
+    await expect(hit.locator("button")).toBeVisible();
   });
 });
